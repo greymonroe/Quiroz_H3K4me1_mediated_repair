@@ -1,0 +1,192 @@
+source("code/libraries_functions.R")
+source("code/load_rice_data.R")
+
+
+
+pdf("figures/genome.pdf", width=5.7, height=1.5)
+genome_windows<-make_genome_windows(genome[1:12], 3000000, overlap=F)
+genome_windows_scale<-data.table(scale(genome_windows[,-c(1:4)]))
+genome_windows_melt<-melt(cbind(genome_windows[,c(1,2)], genome_windows_scale), id.vars = c("chr", "start"))
+starts<-genome_windows[start==1]
+ggplot(genome_windows_melt, aes(x=start/1e6, group=chr, y=variable, fill=value))+
+  geom_tile()+
+  scale_fill_gradientn(colors=c("orange","white","blue","black"))+theme_bw(base_size = 6)+
+  facet_grid(~chr, scales = "free", space = "free_x")+
+  theme(legend.key.size = unit(.5,"line"), legend.key=element_rect(color="black"))+
+  scale_x_continuous(name="Mb")
+dev.off()
+
+pdf("figures/genome_window_regression.pdf", width=1.7, height=1.5)
+
+  genome_windows_log<-make_genome_windows(genome[1:12], 100, overlap=T)
+  model_sum<-log_model(genome_windows_log, "snp")
+  plot_model(model_sum, "SBS, 100bp windows, log")
+  model_sum<-log_model(genome_windows_log, "snp_noCT")
+  plot_model(model_sum, "non-C>T SBS, 100bp windows, log")
+  model_sum<-log_model(genome_windows_log, "snp_homoz")
+  plot_model(model_sum, "Homozygous SBS, 100bp windows, log")
+  model_sum<-log_model(genome_windows_log, "indel")
+  plot_model(model_sum, "InDel, 100bp windows, log")
+  
+  genome_windows<-make_genome_windows(genome[1:12], 100, overlap=F)
+  model_sum<-lm_model(genome_windows, "snp", aic=F)
+  plot_model(model_sum, "SBS, 100bp windows, lm")
+  model_sum<-lm_model(genome_windows, "snp_noCT, lm", aic=F)
+  plot_model(model_sum, "non-C>T SBS, 100bp windows, lm")
+  model_sum<-lm_model(genome_windows, "snp_homoz", aic=F)
+  plot_model(model_sum, "non-C>T SBS, 100bp windows, lm")
+
+dev.off()
+
+  gene_windows<-make_gene_windows(data = gene_annotations_basic, window=100)
+  gene_windows$snp<-add_vars_to_gene_windows(gene_windows, snps)
+  gene_windows$snp_noCT<-add_vars_to_gene_windows(gene_windows, snps[!Single.base.substitution %in% c("C>T","G>A")])
+  gene_windows$snp_homoz<-add_vars_to_gene_windows(gene_windows, snps[Genotype=="Homozygous"])
+  gene_windows$indel<-add_vars_to_gene_windows(gene_windows, indels)
+
+pdf("figures/gene_windows_logistic_regression.pdf", width=1.8, height=1.5)
+  model_sum<-log_model(gene_windows, "snp")
+  plot_model(model_sum, "SBS")
+  model_sum<-log_model(gene_windows, "snp_homoz")
+  plot_model(model_sum, "Homozygous SBS")
+  model_sum<-log_model(gene_windows, "snp_noCT")
+  plot_model(model_sum, "non-C>T SBS")
+  model_sum<-log_model(gene_windows[gene %in% LoF$Gene.ID], "snp_noCT")
+  plot_model(model_sum, "non-C>T SBS, LoF only")
+  model_sum<-log_model(gene_windows[gene %in% LoF$Gene.ID], "snp")
+  plot_model(model_sum, "SBS, LoF only")
+  model_sum<-log_model(gene_windows, "indel")
+  plot_model(model_sum, "indel")
+  model_sum<-log_model(gene_windows, "indel")
+  plot_model(model_sum, "indel, LoF only")
+dev.off()
+
+## around peaks
+
+pdf("figures/peaks_mutations.pdf", width=1.7, height=1.5)
+  out_H3K4me1_genes<-plot_peaks(gene_annotations_basic, "H3K4me1","Gene body", 30,H3K4me1, gene=T, marky=T)
+  print(out_H3K4me1_genes[[1]])
+  out_H3K4me1_genes_random<-plot_peaks(gene_annotations_basic, "Random","Gene body", 30,peaks_randomized(H3K4me1), gene=T, marky=T)
+  
+  rand<-out_H3K4me1_genes_random[[2]]
+  rand$pct<-rand$pct/10
+  ggplot(out_H3K4me1_genes[[2]], aes(x=pos, y=pct, col=region=="gene body", group=region))+
+    geom_line(data=rand, col="black", group=1)+
+    geom_vline(xintercept = c(30, 30*2), linetype="dashed", size=0.25)+
+    geom_line()+
+    scale_color_manual(values=c("gray75","green3"), guide="none")+
+    theme_classic(base_size = 6)+
+    scale_y_continuous(name="Peaks")+
+    ggtitle("H3K4me1")+
+    scale_x_continuous(breaks=c(0,max(out_H3K4me1_genes[[2]]$pos)/3, max(out_H3K4me1_genes[[2]]$pos)/3*2, max(out_H3K4me1_genes[[2]]$pos)), labels=c("-2kb","0%","100%","+2kb"), name="Gene body")
+  
+  out_H3K4me1<-plot_peaks(H3K4me1, "H3K4me1, SBS","Peak region", 30, ns_s)
+  print(out_H3K4me1[[1]])
+  out_H3K4me1_random<-plot_peaks(peaks_randomized(H3K4me1), "Random, SBS","Region", 30, ns_s)
+
+  ggplot(out_H3K4me1[[2]], aes(x=pos, y=pct, col=region=="gene body", group=region))+
+    geom_line(data=out_H3K4me1_random[[2]], col="black", group=1)+
+    geom_vline(xintercept = c(30, 30*2), linetype="dashed", size=0.25)+
+    geom_line()+
+    scale_color_manual(values=c("gray75","green3"), guide="none")+
+    theme_classic(base_size = 6)+
+    scale_y_continuous(name="Mutations/bp")+
+    ggtitle("SBS")+
+    scale_x_continuous(breaks=c(0,max(out_H3K4me1[[2]]$pos)/3, max(out_H3K4me1[[2]]$pos)/3*2, max(out_H3K4me1[[2]]$pos)), labels=c("-2kb","0%","100%","+2kb"), name="Peak region")
+
+    plot_peaks(gene_annotations_basic, "Genes, SBS","Gene body", 30,ns_s, gene=T)
+    plot_peaks(gene_annotations_basic, "Genes, homozygous SBS","Gene body", 30,ns_s[Genotype=="Homozygous"], gene=T)
+    plot_peaks(gene_annotations_basic, "Genes, non-C>T SBS","Gene body", 30,ns_s[!`Single base substitution` %in% c("C>T","G>A")], gene=T)
+    plot_peaks(gene_annotations_basic[locus %in% LoF$Gene.ID], "LoF Only Genes, SBS","Gene body", 30,ns_s, gene=T)
+dev.off()
+
+pdf("figures/peaks_mutations_extra.pdf", width=1.7, height=1.5)
+  plot_peaks(H3K4me1_leaves, "H3K4me1 leaves, SBS","Peak region", 30, ns_s)
+  plot_peaks(H3K4me1_panicles, "H3K4me1 panicles, SBS","Peak region", 30, ns_s)
+  plot_peaks(gene_annotations_basic, "H3K4me1 leaves","Gene body", 30,H3K4me1_leaves, gene=T, marky=T)
+  plot_peaks(gene_annotations_basic, "H3K4me1 panicles","Gene body", 30,H3K4me1_panicles, gene=T, marky=T)
+  plot_peaks(H3K4me1, "H3K4me1, InDel","Peak region", 30, indels)
+  plot_peaks(H3K9me2, "H3K9me2, InDel","Peak region", 30,indels)
+  plot_peaks(gene_annotations_basic, "Genes, InDel","Gene body", 30,indels)
+  plot_peaks(H3K9ac, "H3K9ac, InDel","Peak region", 30,indels)
+  plot_peaks(H3K4me1, "H3K4me1, Homozygous SBS","Peak region", 30, ns_s[Genotype=="Homozygous"])
+  plot_peaks(H3K4me1, "H3K4me1, non-C>T SBS","Peak region", 30, ns_s[!Single.base.substitution %in% c("C>T","G>A")])
+  plot_peaks(H3K4ac, "H3K4ac, SBS","Peak region", 30, ns_s)
+  plot_peaks(H3K9me2, "H3K9me2, SBS","Peak region", 30,ns_s)
+  plot_peaks(H3K9me2, "H3K9me2, non-C>T SBS","Peak region", 30,ns_s[!Single.base.substitution %in% c("C>T","G>A")])
+  plot_peaks(gene_annotations_basic, "H3K9me2","Gene body", 30,H3K9me2, gene=T, marky=T)
+  plot_peaks(gene_annotations_basic, "H3K4me3","Gene body", 30,H3K4me3, gene=T, marky=T)
+  plot_peaks(gene_annotations_basic, "H3K9ac","Gene body", 30,H3K9ac, gene=T, marky=T)
+  plot_peaks(gene_annotations_basic, "H3K36me3","Gene body", 30,H3K36me3, gene=T, marky=T)
+  plot_peaks(gene_annotations_basic, "PII","Gene body", 30,H3K9ac, gene=T, marky=T)
+  plot_peaks(gene_annotations_basic, "H3K12ac","Gene body", 30,H3K36me3, gene=T, marky=T)
+  plot_peaks(gene_annotations_basic, "H3K27me3","Gene body", 30,H3K9ac, gene=T, marky=T)
+  plot_peaks(gene_annotations_basic, "H3K9me1","Gene body", 30,H3K36me3, gene=T, marky=T)
+  plot_peaks(gene_annotations_basic, "H3K27ac","Gene body", 30,H3K36me3, gene=T, marky=T)
+dev.off()
+
+# SBS ---------------------------------------------------------
+
+pdf("figures/kitaake_SBS.pdf", width=6, height=1.5)
+  ggplot(context_table, aes(x=context_only, y=(N), fill=mut))+
+    geom_bar(stat="identity", width=0.5)+
+    facet_grid(~mut, scales = "free")+
+    theme_classic(base_size = 6)+
+    scale_x_discrete(name="Context")+
+    theme(axis.text.x = element_text(angle=90, vjust=0.5, hjust=1), legend.key.size = unit(x = 0.3, units = "line"))+
+    scale_fill_manual(values=c("cyan3","black","red4","gray","green3","pink3"), guide="none")
+  ggplot(Athal, aes(x=context_only, y=(N), fill=mut))+
+    geom_bar(stat="identity")+
+    facet_grid(~mut, scales = "free")+
+    theme_classic(base_size = 6)+
+    theme(axis.text.x = element_text(angle=90, vjust=0.5, hjust=1), legend.key.size = unit(x = 0.3, units = "line"))+
+    scale_fill_manual(values=c("cyan3","black","red4","gray","green3","pink3"), guide="none")
+dev.off()
+
+pdf("figures/kitaake_Athal_SBS_scatter.pdf", width=1.5, height=1.5)
+  SBS_dt<-data.table(A_thal=Athal$N, rice=context_table$N, mut=context_table$mut)
+  ggplot(SBS_dt, aes(x=log(A_thal),y=log(rice), col=mut))+
+    geom_point(size=0.5)+
+    scale_x_continuous(name="log(A. thaliana SBS)")+
+    scale_y_continuous(name="log(Kitaake rice SBS)")+
+    scale_color_manual(values=c("cyan3","black","red4","gray","green3","pink3"), guide="none")+
+    theme_classic(base_size = 6)
+dev.off()
+
+pdf("figures/tss_tts_all.pdf", width=3, height=1.5)
+out<-tss_tts.variants(gff = gene_annotations_basic,vcf=snps)
+tss_tts.variants.plot(out, window=100)+ggtitle("SBS")
+out<-tss_tts.variants(gff = gene_annotations_basic[locus %in% LoF$Gene.ID],vcf=snps)
+tss_tts.variants.plot(out, window=100)+ggtitle("SBS LoF only")
+out<-tss_tts.variants(gff = gene_annotations_basic[locus %in% LoF$Gene.ID],vcf=snps[Genotype=="Homozygous"])
+tss_tts.variants.plot(out, window=100)+ggtitle("SBS Homozygous only")
+out<-tss_tts.variants(gff = gene_annotations_basic[locus %in% LoF$Gene.ID],vcf=snps[!Single.base.substitution %in% c("C>T","G>A")])
+tss_tts.variants.plot(out, window=100)+ggtitle("SBS non-C>T only")
+out<-tss_tts.variants(gff = gene_annotations_basic,vcf=indels)
+tss_tts.variants.plot(out, window=100)+ggtitle("InDels")
+dev.off()
+
+
+# NS/S -------------------------------------------------------
+
+mut_table<-data.table(table(ref=snps$REF, alt=snps$ALT))[N>0]
+write.table(mut_table, "data/mut_table.txt")
+null<-Null_ns_s(mutations = "data/mut_table.txt", composition = "data/Base_pair_frequency_of_CDS.csv")
+
+stop=sum(ns_s$`StopCodon?`=="Stop_codon")
+Ns=sum(ns_s$MutationType=="non-synonymous")-stop
+S=sum(ns_s$MutationType=="synonymous")
+
+dt<-data.table(ratio=c(null[[1]], Ns/S, nrow(missense)/nrow(synonymous)), src=c("Random expectation","MA KitaakeX","3000 genomes"))
+
+pdf("figures/Non-synonymous.pdf", width=1, height=1.5)
+ggplot(dt, aes(x=src, y=ratio))+
+  geom_bar(stat="identity", position='dodge', col="black", width=0.5)+
+  theme_classic(base_size = 6)+
+  scale_y_continuous(name="Non-syn/Syn")+
+  scale_x_discrete(name="")+
+  theme(axis.text.x=element_text(angle=90, hjust=1))
+dev.off()
+
+
+
