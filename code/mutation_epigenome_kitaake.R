@@ -177,16 +177,54 @@ stop=sum(ns_s$`StopCodon?`=="Stop_codon")
 Ns=sum(ns_s$MutationType=="non-synonymous")-stop
 S=sum(ns_s$MutationType=="synonymous")
 
-dt<-data.table(ratio=c(null[[1]], Ns/S, nrow(missense)/nrow(synonymous)), src=c("Random expectation","MA KitaakeX","3000 genomes"))
+ns_s_genes<-ns_s[ns_s$gene %in% gene_annotations_basic$locus & `StopCodon?`!="Stop_codon"]
+Ns_gene=sum(ns_s_genes$MutationType=="non-synonymous")
+S_gene=sum(ns_s_genes$MutationType=="synonymous")
 
-pdf("figures/Non-synonymous.pdf", width=1, height=1.5)
-ggplot(dt, aes(x=src, y=ratio))+
+ns_s_TE<-ns_s[ns_s$gene %in% TE$locus & `StopCodon?`!="Stop_codon"]
+Ns_TE=sum(ns_s_TE$MutationType=="non-synonymous")
+S_TE=sum(ns_s_TE$MutationType=="synonymous")
+
+
+gene_annotations_all$syn<-add_vars_hits_to_gene_windows(gene_annotations_all, synonymous)
+gene_annotations_all$missense<-add_vars_hits_to_gene_windows(gene_annotations_all, missense)
+gene_annotations_all_means<-gene_annotations_all[,.(syn=sum(syn), missense=sum(missense), ns_s=sum(missense)/sum(syn)), by=.(is_TE)]
+
+chisq.test(matrix(c(Ns_TE, S_TE, Ns_gene, S_gene), nrow=2))
+chisq.test(c(Ns_gene, S_gene), p = prop.table(c(null[[1]], 1)))
+chisq.test(matrix(c(Ns, S, nrow(missense), nrow(synonymous)), nrow=2))
+
+dt<-data.table(ratio=c(null[[1]], Ns/S, Ns_TE/S_TE, Ns_gene/S_gene,  nrow(missense)/nrow(synonymous), gene_annotations_all_means$ns_s[1], gene_annotations_all_means$ns_s[2]), 
+               src=c("Random expectation","MA KitaakeX all","MA KitaakeX \nprotein coding genes", "MA KitaakeX \ntransposable elements", "3,010 accessions all","3,010 accessions \nprotein coding genes", "3,010 accessions \ntransposable elements"),
+               Data=c("Neutral simulation","Mutation accumulation (MA)","Mutation accumulation (MA)","Mutation accumulation (MA)", "Natural populations","Natural populations","Natural populations"))
+
+pdf("figures/Non-synonymous.pdf", width=3.5, height=2)
+ggplot(dt, aes(x=src, y=ratio, fill=Data))+
   geom_bar(stat="identity", position='dodge', col="black", width=0.5)+
   theme_classic(base_size = 6)+
   scale_y_continuous(name="Non-syn/Syn")+
   scale_x_discrete(name="")+
-  theme(axis.text.x=element_text(angle=90, hjust=1))
+  theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1), legend.key.size = unit(0.4, units="line"))
 dev.off()
 
+table(ns_s[`StopCodon?`!="Stop_codon"]$MutationType, gsub("\\..+", "", ns_s[`StopCodon?`!="Stop_codon"]$gene) %in% LoF$Gene.ID)
+
+
+# checking non-genic H3K4me1 peaks
+H3K4me1_non_genes<-foverlaps(H3K4me1, gene_annotations_basic,type="any")
+H3K4me1_non_genes<-H3K4me1_non_genes[,.(marked=ifelse(sum(!is.na(locus))==0, "unmarked","marked")), by=.(chr, start=i.start, stop=i.stop)]
+H3K4me1_non_genes$ID<-1:nrow(H3K4me1_non_genes)
+H3K4me1_non_genes$length<-H3K4me1_non_genes$stop-H3K4me1_non_genes$start
+table(H3K4me1_non_genes$marked)
+
+out<-plot_peaks(H3K4me1_non_genes[marked=="unmarked"], "H3K4me1, non genic, SBS","Peak region", 10, ns_s)
+out_means<-out[[2]][,.(mut=sum(mut), length=sum(length), pct=sum(mut)/sum(length)), by=region=="gene body"]
+(out_means$pct[1]-out_means$pct[2])/out_means$pct[1]
+chisq.test(out_means[,2:3])
+
+out<-plot_peaks(H3K4me1, "H3K4me1, non genic, SBS","Peak region", 10, ns_s)
+out_means<-out[[2]][,.(mut=sum(mut), length=sum(length), pct=sum(mut)/sum(length)), by=region=="gene body"]
+(out_means$pct[1]-out_means$pct[2])/out_means$pct[1]
+chisq.test(out_means[,2:3])
 
 

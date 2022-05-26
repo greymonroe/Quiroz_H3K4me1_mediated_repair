@@ -4,14 +4,17 @@ setwd("~/Dropbox/Research/rice mutation paper/")
 genome<-read.fasta("data/Osativa_204_softmasked.fa.gz")
 
 #load rice data
+
 LoF<-data.table(read.xlsx("data/Genes-Mutated-by-Loss-of-Function-Mutations-1504lines.xlsx", sheet=1, startRow = 4))
-gene_annotations_basic<-fread("data/all.locus_brief_info.7.0")
-gene_annotations_basic<-gene_annotations_basic[is_TE=="N" & is_representative=="Y"]
+gene_annotations_all<-fread("data/all.locus_brief_info.7.0")
+gene_annotations_all$length<-gene_annotations_all$stop-gene_annotations_all$start
+gene_annotations_all$window_ID<-1:nrow(gene_annotations_all)
+gene_annotations_all$ID<-1:nrow(gene_annotations_all)
+setkey(gene_annotations_all, chr, start, stop)
+TE<-gene_annotations_all[is_TE=="Y" & is_representative=="Y"]
+gene_annotations_basic<-gene_annotations_all[is_TE=="N" & is_representative=="Y"]
 gene_annotations_basic$direction<-gene_annotations_basic$ori
 gene_annotations_basic$type="gene"
-gene_annotations_basic$length<-gene_annotations_basic$stop-gene_annotations_basic$start
-gene_annotations_basic$ID<-1:nrow(gene_annotations_basic)
-setkey(gene_annotations_basic, chr, start, stop)
 
 snps<-data.table(read.xlsx("data/Mutations-Identified-1504lines.xlsx", sheet=1, startRow = 4))
 snps$CHROM<-snps$Chromosome
@@ -64,14 +67,16 @@ H3K9ac<-read_encode("data/SRR6795643_H3K9ac_seedlings.bed")
 
 missense<-fread("data/rice_missense.txt");colnames(missense)<-c("CHROM","POS")
 missense$chr<-paste0('Chr',missense$CHROM)
-missense$start<-paste0('Chr',missense$POS)
-missense$stop<-paste0('Chr',missense$POS)
+missense$start<-missense$POS
+missense$stop<-missense$POS
+missense$Mutant.ID<-1:nrow(missense)
 setkey(missense, chr, start, stop)
 
 synonymous<-fread("data/rice_synonymous.txt");colnames(synonymous)<-c("CHROM","POS")
 synonymous$chr<-paste0('Chr',synonymous$CHROM)
-synonymous$start<-paste0('Chr',synonymous$POS)
-synonymous$stop<-paste0('Chr',synonymous$POS)
+synonymous$start<-synonymous$POS
+synonymous$stop<-synonymous$POS
+synonymous$Mutant.ID<-1:nrow(synonymous)
 setkey(synonymous, chr, start, stop)
 
 
@@ -82,5 +87,6 @@ ns_s$unique<-paste0(ns_s$CHROM, ns_s$POS, ns_s$Single.base.substitution)
 ns_s$chr<-ns_s$CHROM
 ns_s$start<-ns_s$POS
 ns_s$stop<-ns_s$POS
+ns_s$gene<-gsub("\\..+", "", ns_s$ID)
 setkey(ns_s, chr, start, stop)
 

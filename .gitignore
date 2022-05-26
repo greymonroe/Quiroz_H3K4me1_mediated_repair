@@ -3,3 +3,6 @@
 .RData
 .Ruserdata
 data
+data.zip
+.gitignore
+.DS_Store
