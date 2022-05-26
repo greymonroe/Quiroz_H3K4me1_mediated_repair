@@ -86,7 +86,11 @@ ns_s$POS<-ns_s$Position
 ns_s$unique<-paste0(ns_s$CHROM, ns_s$POS, ns_s$Single.base.substitution)
 ns_s$chr<-ns_s$CHROM
 ns_s$start<-ns_s$POS
+ns_s$Mutant.ID<-ns_s$`Mutant ID`
 ns_s$stop<-ns_s$POS
 ns_s$gene<-gsub("\\..+", "", ns_s$ID)
+ns<-ns_s[MutationType=="non-synonymous"]
+s<-ns_s[MutationType=="synonymous"]
+
 setkey(ns_s, chr, start, stop)
 

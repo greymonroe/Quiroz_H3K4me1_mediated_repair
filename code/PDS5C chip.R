@@ -52,6 +52,18 @@ ggplot(means_cds[!is.na(grp)], aes(x=grp*5, y=enrich))+
   theme(axis.text.x = element_text(angle=90, hjust=1))+
   scale_x_continuous(name="NI %ile")
 
+means_cds<-genes[is.finite(tissue_breadth),.(enrich=mean(enrich, na.rm=T), length=sum(`CDS length`), se=sd(enrich2, na.rm=T)/sqrt(.N)), by=.(grp=(Hmisc::cut2(tissue_breadth, g=10)))]
+cor<-cor.test(genes[is.finite(tissue_breadth)]$tissue_breadth, genes[is.finite(tissue_breadth)]$enrich)
+ggplot(means_cds[!is.na(grp)], aes(x=grp, y=enrich))+
+  geom_line(size=0.25, col="green4", group=1)+
+  geom_point(size=0.5)+
+  theme_classic(base_size = 6)+
+  ggtitle(paste("r =", round(cor$estimate, digits = 2)))+
+  scale_y_continuous(name="PDS5C enrichment")+
+  geom_errorbar(aes(ymin=enrich-se, ymax=enrich+se), width=0)+
+  theme(axis.text.x = element_text(angle=90, hjust=1))+
+  scale_x_discrete(name="Tissue breadth")
+
 means_cds<-genes[is.finite(DnDs),.(enrich=mean(enrich, na.rm=T), length=sum(`CDS length`), se=sd(enrich, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(DnDs, g=20)))]
 cor<-cor.test(genes[is.finite(DnDs)]$DnDs, genes[is.finite(DnDs)]$enrich)
 ggplot(means_cds[!is.na(grp)], aes(x=grp*5, y=enrich))+
@@ -112,6 +124,21 @@ germs<-fread("data/A_thaliana_regions.txt")
 germs$chr<-as.character(germs$chr)
 germs$gene<-germs$info
 setkey(germs, chr, start, stop)
+
+pdf("figures/A_thal_features_mutation_germline.pdf", width=1.25, height=1.25)
+
+type_means<-germs[,.(mut=sum(MA_snp), length=sum(length), pct=sum(MA_snp)/sum(length)), by=.(grp=type)]
+type_means$grp<-c("Upstream","5' UTR","Coding","Intron","Downstream", "3' UTR")
+type_means$grp<-factor(type_means$grp, levels=c("Upstream","5' UTR","Intron","Coding","3' UTR","Downstream"))
+chisq.test(type_means[,2:3])
+
+ggplot(type_means, aes(x=grp, y=pct/(107*25+400*8)))+
+  geom_bar(stat="identity", size=0.5)+
+  theme_classic(base_size = 6)+
+  scale_y_continuous(name="Mutations/bp")+
+  theme(axis.text.x = element_text(angle=90, hjust=1), axis.title.x = element_blank())+
+  scale_x_discrete()
+dev.off()
 
 inputs<-lapply(infiles, function(i){ 
   chip_overlaps(i, germs)

@@ -125,6 +125,7 @@ pdf("figures/peaks_mutations_extra.pdf", width=1.7, height=1.5)
   plot_peaks(gene_annotations_basic, "H3K27ac","Gene body", 30,H3K36me3, gene=T, marky=T)
 dev.off()
 
+
 # SBS ---------------------------------------------------------
 
 pdf("figures/kitaake_SBS.pdf", width=6, height=1.5)
@@ -185,9 +186,11 @@ ns_s_TE<-ns_s[ns_s$gene %in% TE$locus & `StopCodon?`!="Stop_codon"]
 Ns_TE=sum(ns_s_TE$MutationType=="non-synonymous")
 S_TE=sum(ns_s_TE$MutationType=="synonymous")
 
-
 gene_annotations_all$syn<-add_vars_hits_to_gene_windows(gene_annotations_all, synonymous)
 gene_annotations_all$missense<-add_vars_hits_to_gene_windows(gene_annotations_all, missense)
+gene_annotations_all$ns<-add_vars_hits_to_gene_windows(gene_annotations_all, ns)
+gene_annotations_all$s<-add_vars_hits_to_gene_windows(gene_annotations_all, s)
+gene_annotations_all$pnps<-gene_annotations_all$missense/gene_annotations_all$syn
 gene_annotations_all_means<-gene_annotations_all[,.(syn=sum(syn), missense=sum(missense), ns_s=sum(missense)/sum(syn)), by=.(is_TE)]
 
 chisq.test(matrix(c(Ns_TE, S_TE, Ns_gene, S_gene), nrow=2))
@@ -209,6 +212,34 @@ dev.off()
 
 table(ns_s[`StopCodon?`!="Stop_codon"]$MutationType, gsub("\\..+", "", ns_s[`StopCodon?`!="Stop_codon"]$gene) %in% LoF$Gene.ID)
 
+
+
+# rice contraints
+gene_annotations_all$mut<-add_vars_hits_to_gene_windows(gene_annotations_all, ns_s)
+gene_annotations_all$H3K4me1<-encode_hits(H3K4me1, gene_annotations_all, out="length")
+
+
+pdf("figures/rice_mutation_constraints.pdf", width=1.5, height=1.5)
+
+gene_annotations_all_sums<-gene_annotations_all[is_representative=="Y" & chr %in% paste0("Chr",1:12) & is.finite(pnps),.(mut=sum(mut), length=sum(length), ns=sum(ns), s=sum(s), ns_s=sum(ns)/sum(s), pct=sum(mut)/sum(length), H3K4me1=sum(H3K4me1),nonH3K4me1=sum(H3K4me1==0),H3K4me1_pct=sum(H3K4me1)/sum(length), N=.N), by=.(grp=is_expressed)]
+chisq.test(gene_annotations_all_sums[,2:3])
+(gene_annotations_all_sums$pct[2]-gene_annotations_all_sums$pct[1])/gene_annotations_all_sums$pct[2]
+plot_bars_rice(gene_annotations_all_sums, yvar="pct", xlab="Expressed",ylab="Mutations/bp",ggtitle = "p = 1e-15")
+chisq.test(gene_annotations_all_sums[,4:5])
+plot_bars_rice(gene_annotations_all_sums, yvar="ns_s", xlab="Expressed",ylab="de novo MA N/S",ggtitle = "p = 0.98")
+chisq.test(gene_annotations_all_sums[,c(8,3)])
+plot_bars_rice(gene_annotations_all_sums, yvar="H3K4me1_pct", xlab="Expressed",ylab="H3K4me1 peaks (% of genes)",ggtitle = "p < 2e-16")
+
+gene_annotations_all_sums<-gene_annotations_all[is_representative=="Y" & chr %in% paste0("Chr",1:12) & is.finite(pnps),.(mut=sum(mut), length=sum(length), ns=sum(ns), s=sum(s), ns_s=sum(ns)/sum(s), pct=sum(mut)/sum(length), H3K4me1=sum(H3K4me1),nonH3K4me1=sum(H3K4me1==0),H3K4me1_pct=sum(H3K4me1)/sum(length), N=.N), by=.(grp=Hmisc::cut2(pnps, g=2))]
+chisq.test(gene_annotations_all_sums[,2:3])
+(gene_annotations_all_sums$pct[2]-gene_annotations_all_sums$pct[1])/gene_annotations_all_sums$pct[2]
+plot_bars_rice(gene_annotations_all_sums, yvar="pct", xlab="PnPs",ylab="Mutations/bp",ggtitle = "p < 2e-16")
+chisq.test(gene_annotations_all_sums[,4:5])
+plot_bars_rice(gene_annotations_all_sums, yvar="ns_s", xlab="PnPs",ylab="de novo MA N/S",ggtitle = "p = 0.64")
+chisq.test(gene_annotations_all_sums[,c(8,3)])
+plot_bars_rice(gene_annotations_all_sums, yvar="H3K4me1_pct", xlab="PnPs",ylab="H3K4me1 peaks (% of genes)",ggtitle = "p < 2e-16")
+
+dev.off()
 
 # checking non-genic H3K4me1 peaks
 H3K4me1_non_genes<-foverlaps(H3K4me1, gene_annotations_basic,type="any")

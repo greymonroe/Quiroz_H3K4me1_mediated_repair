@@ -262,3 +262,13 @@ peaks_randomized<-function(featureobject){
   rand$ID<-1:nrow(rand)
   setkey(rand, chr, start, stop)
 }
+
+plot_bars_rice<-function(sumstable, yvar, xlab, ylab, ggtitle){
+  ggplot(gene_annotations_all_sums, aes_string(x="grp", y=yvar))+
+    geom_bar(stat="identity", fill="dodgerblue4", col="black", width=0.5)+
+    theme_classic(base_size = 6)+
+    scale_x_discrete(name=xlab)+
+    scale_y_continuous(name=ylab)+
+    ggtitle(ggtitle)
+  
+}
