@@ -10,7 +10,8 @@ genome_windows_melt<-melt(cbind(genome_windows[,c(1,2)], genome_windows_scale), 
 starts<-genome_windows[start==1]
 ggplot(genome_windows_melt, aes(x=start/1e6, group=chr, y=variable, fill=value))+
   geom_tile()+
-  scale_fill_gradientn(colors=c("orange","white","blue","black"))+theme_bw(base_size = 6)+
+  scale_fill_gradientn(colors=c("orange","white","blue","black"))+
+  theme_bw(base_size = 6)+
   facet_grid(~chr, scales = "free", space = "free_x")+
   theme(legend.key.size = unit(.5,"line"), legend.key=element_rect(color="black"))+
   scale_x_continuous(name="Mb")
