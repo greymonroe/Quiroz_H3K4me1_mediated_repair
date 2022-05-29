@@ -1,6 +1,6 @@
 # Read mutations
 library("readxl")
-Mutations <- read_excel("/Users/kehan/Desktop/Monroe_Lab/Spring_2022/Rice_Mutation_Annotation/Mutations-Identified-1504lines.xlsx")
+Mutations <- read_excel("data/Mutations-Identified-1504lines.xlsx")
 Mutations <- as.data.frame(Mutations)
 colnames(Mutations)<-Mutations[3,]
 Mutations<-Mutations[-c(1:3),]
@@ -10,7 +10,7 @@ Mutations <- Mutations[complete.cases(Mutations), ]
 
 # Read gff file
 library(ape)
-gff <- read.gff("/Users/kehan/Desktop/Monroe_Lab/Spring_2022/Rice_Mutation_Annotation/all.gff3", GFF3 = TRUE)
+gff <- read.gff("data/all.gff3", GFF3 = TRUE)
 CDS<- gff[which(gff$type=="CDS"),]
 CDS$ID<-gsub(".*=","",CDS$attributes) #.*= means everything before and including =
 CDS$CDSnum<-gsub(";.*", "", CDS$attributes)
@@ -18,7 +18,7 @@ CDS$CDSnum<-gsub(".*_", "", CDS$CDSnum)
 
 # CDS Sequence
 library(seqinr)
-cds<-read.fasta("/Users/kehan/Desktop/Monroe_Lab/Spring_2022/Rice_Mutation_Annotation/all.cds")
+cds<-read.fasta("data/Rice_Mutation_Annotation/all.cds")
 ID_list<-names(cds)
 
 # See if the mutation is inside CDS
