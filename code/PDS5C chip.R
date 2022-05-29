@@ -52,6 +52,18 @@ ggplot(means_cds[!is.na(grp)], aes(x=grp*5, y=enrich))+
   theme(axis.text.x = element_text(angle=90, hjust=1))+
   scale_x_continuous(name="NI %ile")
 
+means_cds<-genes[is.finite(TajimasD),.(enrich=mean(enrich, na.rm=T), length=sum(`CDS length`), se=sd(enrich2, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(TajimasD, g=20)))]
+cor<-cor.test(genes[is.finite(TajimasD)]$TajimasD, genes[is.finite(TajimasD)]$enrich)
+ggplot(means_cds[!is.na(grp)], aes(x=grp*5, y=enrich))+
+  geom_line(size=0.25, col="green4")+
+  geom_point(size=0.5)+
+  theme_classic(base_size = 6)+
+  ggtitle(paste("r =", round(cor$estimate, digits = 2)))+
+  scale_y_continuous(name="PDS5C enrichment")+
+  geom_errorbar(aes(ymin=enrich-se, ymax=enrich+se), width=0)+
+  theme(axis.text.x = element_text(angle=90, hjust=1))+
+  scale_x_continuous(name="Tajimas D %ile")
+
 means_cds<-genes[is.finite(tissue_breadth),.(enrich=mean(enrich, na.rm=T), length=sum(`CDS length`), se=sd(enrich2, na.rm=T)/sqrt(.N)), by=.(grp=(Hmisc::cut2(tissue_breadth, g=10)))]
 cor<-cor.test(genes[is.finite(tissue_breadth)]$tissue_breadth, genes[is.finite(tissue_breadth)]$enrich)
 ggplot(means_cds[!is.na(grp)], aes(x=grp, y=enrich))+
@@ -106,6 +118,7 @@ summary(lm(enrich~H3K4me2+H3K4me1+H3K4me3+H3K27me1+H3K27ac+H3K36ac+H3K36me3+H3K9
 
 pdf("figures/PDS5C_chip_enrich_ESN.pdf", width=1.5, height=1.5)
   ESN<-fread("data/A_thaliana_essential_genes.txt")
+  ESN[!ESN$gene %in% genes$gene]
   ESN_genes<-merge(ESN, genes, by="gene")
   means_esn<-ESN_genes[,.(enrich=mean(enrich, na.rm=T), se=sd(enrich, na.rm=T)/sqrt(.N)), by=.(grp)]
   means_esn$grp<-factor(means_esn$grp, levels=means_esn$grp[order(means_esn$enrich)])

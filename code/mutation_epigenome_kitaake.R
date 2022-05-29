@@ -114,7 +114,9 @@ pdf("figures/peaks_mutations_extra.pdf", width=1.7, height=1.5)
   plot_peaks(H3K4me1, "H3K4me1, non-C>T SBS","Peak region", 30, ns_s[!Single.base.substitution %in% c("C>T","G>A")])
   plot_peaks(H3K4ac, "H3K4ac, SBS","Peak region", 30, ns_s)
   plot_peaks(H3K9me2, "H3K9me2, SBS","Peak region", 30,ns_s)
+  plot_peaks(PII, "PII, SBS","Peak region", 30,ns_s)
   plot_peaks(H3K9me2, "H3K9me2, non-C>T SBS","Peak region", 30,ns_s[!Single.base.substitution %in% c("C>T","G>A")])
+  plot_peaks(gene_annotations_basic, "PII","Gene body", 30,PII, gene=T, marky=T)
   plot_peaks(gene_annotations_basic, "H3K9me2","Gene body", 30,H3K9me2, gene=T, marky=T)
   plot_peaks(gene_annotations_basic, "H3K4me3","Gene body", 30,H3K4me3, gene=T, marky=T)
   plot_peaks(gene_annotations_basic, "H3K9ac","Gene body", 30,H3K9ac, gene=T, marky=T)
@@ -258,5 +260,3 @@ out<-plot_peaks(H3K4me1, "H3K4me1, non genic, SBS","Peak region", 10, ns_s)
 out_means<-out[[2]][,.(mut=sum(mut), length=sum(length), pct=sum(mut)/sum(length)), by=region=="gene body"]
 (out_means$pct[1]-out_means$pct[2])/out_means$pct[1]
 chisq.test(out_means[,2:3])
-
-
