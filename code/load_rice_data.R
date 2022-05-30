@@ -30,8 +30,10 @@ snps$context<-contexts(snps, genome)
 context_table<-data.table(table(context=snps$context))
 context_table$context_only<-substr(context_table$context, 1, 3)
 context_table$mut<-paste(substr(context_table$context, 2,2),substr(context_table$context, 6,6), sep=">")
-Athal<-fread("data/A_thal_germ_SBS.txt")
 setkey(snps, chr, start, stop)
+
+Athal<-fread("data/A_thal_germ_SBS.txt")
+Athal_mut<-fread("data/A_thaliana_germline_mutations.txt")
 
 del<-data.table(read.xlsx("data/Mutations-Identified-1504lines.xlsx", sheet=2, startRow = 2))
 del$CHROM<-del$Chromosome
