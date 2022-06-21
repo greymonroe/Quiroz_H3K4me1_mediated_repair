@@ -277,7 +277,7 @@ plot_bars_rice<-function(sumstable, yvar, xlab, ylab, ggtitle){
 bw_read<-function(bwfile){
   bw_dt<-data.table(data.frame(import(con=bwfile)))
   colnames(bw_dt)[1]<-"chr"
-  bw_dt$chr<-gsub("chr","",bw_dt$chr)
+  bw_dt$chr<-as.numeric(gsub("chr","",bw_dt$chr))
   colnames(bw_dt)[3]<-"stop"
   colnames(bw_dt)[4]<-"length"
   colnames(bw_dt)[6]<-"depth"
@@ -285,13 +285,13 @@ bw_read<-function(bwfile){
 }
 
 bw_overlaps<-function(bw_object, window_object){
-  out<-unlist(lapply(1:5, function(c) {
+  out<-unlist(lapply(unique(window_object$chr), function(c) {
     cat(" chr ");cat(c)
-    window_input_overlap<-foverlaps(featureobject[chr==c], bw_object[chr==c],type="any")
+    window_input_overlap<-foverlaps(window_object[chr==c], bw_object[chr==c],type="any")
     window_input<-window_input_overlap[,.(len=sum(length,na.rm=T), dep=sum(depth,na.rm=T)), by=.(chr, start=i.start, stop=i.stop, window_id)]
     window_input$input<-window_input$len*window_input$dep
     rm("window_input_overlap")
-    input<-CDS_input$input
+    input<-window_input$input
     return(input)
   }))
   return(out)
