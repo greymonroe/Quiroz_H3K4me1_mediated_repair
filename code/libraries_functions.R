@@ -1,8 +1,8 @@
 library(seqinr)
 library(openxlsx)
 library(data.table)
-library(polymorphology) #github: greymonroe/polymorphology
-library(cowplot)
+library(polymorphology) #devtools::install_github("greymonroe/polymorphology)
+library(rtracklayer) #BiocManager::install("rtracklayer")
 
 make_feature_windows<-function(encode_data, deciles=10, gene=F){
 
@@ -272,3 +272,28 @@ plot_bars_rice<-function(sumstable, yvar, xlab, ylab, ggtitle){
     ggtitle(ggtitle)
   
 }
+
+
+bw_read<-function(bwfile){
+  bw_dt<-data.table(data.frame(import(con=bwfile)))
+  colnames(bw_dt)[1]<-"chr"
+  bw_dt$chr<-gsub("chr","",bw_dt$chr)
+  colnames(bw_dt)[3]<-"stop"
+  colnames(bw_dt)[4]<-"length"
+  colnames(bw_dt)[6]<-"depth"
+  setkey(bw_dt, chr, start, stop)
+}
+
+bw_overlaps<-function(bw_object, window_object){
+  out<-unlist(lapply(1:5, function(c) {
+    cat(" chr ");cat(c)
+    window_input_overlap<-foverlaps(featureobject[chr==c], bw_object[chr==c],type="any")
+    window_input<-window_input_overlap[,.(len=sum(length,na.rm=T), dep=sum(depth,na.rm=T)), by=.(chr, start=i.start, stop=i.stop, window_id)]
+    window_input$input<-window_input$len*window_input$dep
+    rm("window_input_overlap")
+    input<-CDS_input$input
+    return(input)
+  }))
+  return(out)
+}
+
