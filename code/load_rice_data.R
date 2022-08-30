@@ -2,6 +2,9 @@
 setwd("~/Dropbox/Research/rice mutation paper/")
 
 genome<-read.fasta("data/Osativa_204_softmasked.fa.gz")
+gff<-fread("data/all.clean.gff", fill=T)
+gff$name=substr(gff$V9, 4,17)
+gff$model=gsub("(ID=)|:.+|;.+","", gff$V9)
 
 #load rice data
 
@@ -10,9 +13,24 @@ gene_annotations_all<-fread("data/all.locus_brief_info.7.0")
 gene_annotations_all$length<-gene_annotations_all$stop-gene_annotations_all$start
 gene_annotations_all$window_ID<-1:nrow(gene_annotations_all)
 gene_annotations_all$ID<-1:nrow(gene_annotations_all)
+
+gff_genes<-gff[model %in% gene_annotations_all$model]
+cds<-gff_genes[V3=="CDS"]
+
+gene_annotations_all$CDS<-sapply(gene_annotations_all$model, function(x){
+  proteins<-cds[model == x]
+  if(nrow(proteins)>0){
+    cds_bp<-(unique(unlist(apply(unique(proteins[,-9]), 1, function(x){
+      as.numeric(x["V4"]):as.numeric(x["V5"])
+    }))))
+    return(length(cds_bp))
+  } else return(NA)
+})
+
+gene_annotations_all$pct_CDS<-gene_annotations_all$CDS/gene_annotations_all$length
 setkey(gene_annotations_all, chr, start, stop)
 TE<-gene_annotations_all[is_TE=="Y" & is_representative=="Y"]
-gene_annotations_basic<-gene_annotations_all[is_TE=="N" & is_representative=="Y"]
+gene_annotations_basic<-gene_annotations_all[chr %in% paste0("Chr",1:12) & is_TE=="N" & is_representative=="Y"]
 gene_annotations_basic$direction<-gene_annotations_basic$ori
 gene_annotations_basic$type="gene"
 

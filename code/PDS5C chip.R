@@ -1,9 +1,18 @@
 library(data.table)
 library(seqinr)
 library(ggplot2)
+library(polymorphology)
+source("code/libraries_functions.R")
+
 
 gff<-fread("data/A_thaliana_gff.txt")
 genes<-gff[type=="gene"]
+genes$START<-genes$start
+genes$CHROM<-genes$chr
+genes$STOP<-genes$stop
+mutations<-fread("~/Desktop/germline_mutations_meta.csv")
+mutations$CHROM<-as.character(mutations$CHROM)
+genes$mutations<-mutations_in_features(genes, mutations)
 
 CDS<-fread("data/A_thaliana_genes.txt")
 CDS$chr<-as.character(CDS$chr)
@@ -52,6 +61,18 @@ ggplot(means_cds[!is.na(grp)], aes(x=grp*5, y=enrich))+
   theme(axis.text.x = element_text(angle=90, hjust=1))+
   scale_x_continuous(name="NI %ile")
 
+means_cds<-genes[,.(mutations=sum(mutations, na.rm=T), length=sum(stop-start), se=sd(enrich, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(enrich, g=100)))]
+cor<-cor.test((genes$mutations)/genes$length, genes$enrich)
+ggplot(means_cds[!is.na(grp)], aes(x=grp, y=mutations/length))+
+  #geom_line(size=0.25, col="green4")+
+  geom_point(size=0.5)+
+  theme_classic(base_size = 6)+
+  ggtitle(paste("r =", round(cor$estimate, digits = 2)))+
+  scale_y_continuous(name="Mutations/b.p.")+
+  #geom_errorbar(aes(ymin=enrich-se, ymax=enrich+se), width=0)+
+  theme(axis.text.x = element_text(angle=90, hjust=1))+
+  scale_x_continuous(name="PDS5C enrichment")
+
 means_cds<-genes[is.finite(TajimasD),.(enrich=mean(enrich, na.rm=T), length=sum(`CDS length`), se=sd(enrich2, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(TajimasD, g=20)))]
 cor<-cor.test(genes[is.finite(TajimasD)]$TajimasD, genes[is.finite(TajimasD)]$enrich)
 ggplot(means_cds[!is.na(grp)], aes(x=grp*5, y=enrich))+
@@ -76,10 +97,10 @@ ggplot(means_cds[!is.na(grp)], aes(x=grp, y=enrich))+
   theme(axis.text.x = element_text(angle=90, hjust=1))+
   scale_x_discrete(name="Tissue breadth")
 
-means_cds<-genes[is.finite(DnDs),.(enrich=mean(enrich, na.rm=T), length=sum(`CDS length`), se=sd(enrich, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(DnDs, g=20)))]
+means_cds<-genes[is.finite(DnDs),.(enrich=mean(enrich, na.rm=T), length=sum(`CDS length`), se=sd(enrich, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(DnDs, g=100)))]
 cor<-cor.test(genes[is.finite(DnDs)]$DnDs, genes[is.finite(DnDs)]$enrich)
-ggplot(means_cds[!is.na(grp)], aes(x=grp*5, y=enrich))+
-  geom_line(size=0.25, col="green4")+
+ggplot(means_cds[!is.na(grp)], aes(x=grp, y=enrich))+
+  #geom_line(size=0.25, col="green4")+
   geom_point(size=0.5)+
   theme_classic(base_size = 6)+
   ggtitle(paste("r =", round(cor$estimate, digits = 2)))+
@@ -88,7 +109,7 @@ ggplot(means_cds[!is.na(grp)], aes(x=grp*5, y=enrich))+
   theme(axis.text.x = element_text(angle=90, hjust=1))+
   scale_x_continuous(name="Dn/Ds %ile")
 
-means_cds<-genes[is.finite(PnPs),.(enrich=mean(enrich, na.rm=T), length=sum(`CDS length`), se=sd(enrich, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(PnPs, g=20)))]
+means_cds<-genes[is.finite(PnPs),.(enrich=mean(enrich, na.rm=T), length=sum(`CDS length`), se=sd(enrich, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(PnPs, g=100)))]
 cor<-cor.test(genes[is.finite(PnPs)]$PnPs, genes[is.finite(PnPs)]$enrich)
 ggplot(means_cds[!is.na(grp)], aes(x=grp*5, y=enrich))+
   geom_line(size=0.25, col="green4")+
@@ -100,10 +121,10 @@ ggplot(means_cds[!is.na(grp)], aes(x=grp*5, y=enrich))+
   theme(axis.text.x = element_text(angle=90, hjust=1))+
   scale_x_continuous(name="Pn/Ps %ile")
 
-means_cds<-genes[is.finite(H3K4me1),.(enrich=mean(enrich, na.rm=T), length=sum(`CDS length`), se=sd(enrich, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(H3K4me1, g=20)))]
+means_cds<-genes[is.finite(H3K4me1),.(enrich=mean(enrich, na.rm=T), length=sum(`CDS length`), se=sd(enrich, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(H3K4me1, g=100)))]
 cor<-cor.test(genes$H3K4me1, genes$enrich)
-ggplot(means_cds[!is.na(grp)], aes(x=grp*5, y=enrich))+
-  geom_line(size=0.25, col="green4")+
+ggplot(means_cds[!is.na(grp)], aes(x=grp, y=enrich))+
+  #geom_line(size=0.25, col="green4")+
   geom_point(size=0.5)+
   theme_classic(base_size = 6)+
   ggtitle(paste("r =", round(cor$estimate, digits = 2)))+
@@ -111,6 +132,30 @@ ggplot(means_cds[!is.na(grp)], aes(x=grp*5, y=enrich))+
   geom_errorbar(aes(ymin=enrich-se, ymax=enrich+se), width=0)+
   theme(axis.text.x = element_text(angle=90, hjust=1))+
   scale_x_continuous(name="H3K4me1 %ile")
+
+means_cds<-genes[is.finite(H3K4me1)&is.finite(DnDs),.(DnDs=mean(DnDs, na.rm=T), length=sum(`CDS length`), se=sd(DnDs, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(H3K4me1, g=100)))]
+cor<-cor.test(genes[is.finite(H3K4me1)&is.finite(DnDs)]$H3K4me1, genes[is.finite(H3K4me1)&is.finite(DnDs)]$DnDs)
+ggplot(means_cds[!is.na(grp)], aes(x=grp*5, y=DnDs))+
+  geom_line(size=0.25, col="green4")+
+  geom_point(size=0.5)+
+  theme_classic(base_size = 6)+
+  ggtitle(paste("r =", round(cor$estimate, digits = 2)))+
+  scale_y_continuous(name="DnDs")+
+  geom_errorbar(aes(ymin=DnDs-se, ymax=DnDs+se), width=0)+
+  theme(axis.text.x = element_text(angle=90, hjust=1))+
+  scale_x_continuous(name="H3K4me1 %ile")
+
+means_cds<-genes[is.finite(DnDs),.(enrich=mean(H3K4me1, na.rm=T), length=sum(`CDS length`), se=sd(H3K4me1, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(DnDs, g=100)))]
+cor<-cor.test(genes[is.finite(DnDs)]$DnDs, genes[is.finite(DnDs)]$H3K4me1)
+ggplot(means_cds[!is.na(grp)], aes(x=grp, y=enrich))+
+  #geom_line(size=0.25, col="green4")+
+  geom_point(size=0.5)+
+  theme_classic(base_size = 6)+
+  ggtitle(paste("r =", round(cor$estimate, digits = 2)))+
+  scale_y_continuous(name="H3K4me1")+
+  geom_errorbar(aes(ymin=enrich-se, ymax=enrich+se), width=0)+
+  theme(axis.text.x = element_text(angle=90, hjust=1))+
+  scale_x_continuous(name="Dn/Ds %ile")
 
 dev.off()
 
@@ -186,7 +231,7 @@ ggplot(means, aes(x=grp*5, y=pct/(107*25+400*8)))+
   scale_x_continuous(name="PDS5C enrichment\n%ile")
 dev.off()
 
-pdf("figures/PDS5C_chip_enrich_CDS.pdf", width=1.25, height=1.25)
+pdf("figures/PDS5C_chip_enrich_CDS.pdf", width=.75, height=1.25)
 
   type_means<-germs[,.(mut=sum(MA_snp), length=sum(length), pct=sum(MA_snp)/sum(length), enrich=mean(enrich, na.rm=T), se=sd(enrich, na.rm=T)/sqrt(.N)), by=.(grp=type)]
   type_means$grp<-c("Upstream","5' UTR","Coding","Intron","Downstream", "3' UTR")
@@ -208,6 +253,14 @@ pdf("figures/PDS5C_chip_enrich_CDS.pdf", width=1.25, height=1.25)
     geom_errorbar(aes(ymin=enrich-2*se, ymax=enrich+2*se), width=0.1, col="green4")+
     theme(axis.text.x = element_text(angle=90, hjust=1))
 
+  cds_intron_means<-germs[,.(mut=sum(MA_snp), length=sum(length), pct=sum(MA_snp)/sum(length), enrich=mean(enrich, na.rm=T), se=sd(enrich, na.rm=T)/sqrt(.N)), by=.(grp=type=="CDS")]
+  ggplot(cds_intron_means, aes(x=grp, y=enrich))+
+    # geom_point(size=1)+
+    theme_classic(base_size = 6)+
+    scale_y_continuous(name="PDS5C enrich")+
+    geom_errorbar(aes(ymin=enrich-2*se, ymax=enrich+2*se), width=0.1, col="green4")+
+    theme(axis.text.x = element_text(angle=90, hjust=1))
+  
 dev.off()
 
 

@@ -152,7 +152,6 @@ encode_overlap<-function(encode_data, gene_windows){
   encode_overlap<-foverlaps(gene_windows, encode_data,type="any")
   marked<-encode_overlap[,.(marked=ifelse(sum(!is.na(ID))==0, "unmarked","marked")), by=.(chr, start=i.start, stop=i.stop, window_ID)]
   return(as.factor(marked$marked))
-  
 }
 
 encode_hits<-function(encode_data, gene_windows, out="marked"){
@@ -217,6 +216,26 @@ log_model<-function(gene_windows, variable){
   model_sum$predictor<-factor(model_sum$predictor, levels=model_sum$predictor[order(-model_sum$`z value`)])
   model_sum$y<--model_sum$`z value`
   return(model_sum)
+}
+log_model_single<-function(gene_windows, variable){
+  
+  preds<-c("H3K4me1","H3K9me1","H3K4me3","H3K27me3","H3K9me2","H3K27ac","H3K36me3","PII","H3K4ac","H3K12ac","H3K9ac")
+  models<-lapply(preds, function(pred){
+    cat(pred)
+    form<-formula(paste0("as.numeric(",variable,")~",pred))
+    model<-summary(glm(form, gene_windows, family="binomial"))
+    model_sum<-data.table(model$coefficients)
+    model_sum$predictor<-gsub("unmarked","",row.names(model$coefficients))
+    model_sum$Estimate<--model_sum$Estimate
+    model_sum$P<-model_sum$`Pr(>|z|)`
+    model_sum$predictor<-factor(model_sum$predictor, levels=model_sum$predictor[order(-model_sum$`z value`)])
+    model_sum$y<--model_sum$`z value`
+    return(model_sum)
+  })
+  names(models)<-preds
+  models<-rbindlist(models)[predictor!="(Intercept)"]
+  models$predictor<-factor(models$predictor, levels=models$predictor[order(-models$`z value`)])
+  return(models)
 }
 
 lm_model<-function(gene_windows, variable, aic=F){
