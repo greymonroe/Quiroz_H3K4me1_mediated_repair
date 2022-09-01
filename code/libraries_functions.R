@@ -3,6 +3,7 @@ library(openxlsx)
 library(data.table)
 library(polymorphology) #devtools::install_github("greymonroe/polymorphology)
 library(rtracklayer) #BiocManager::install("rtracklayer")
+library(MASS)
 
 make_feature_windows<-function(encode_data, deciles=10, gene=F){
 
@@ -206,17 +207,22 @@ plot_model<-function(model_sum, ggtitle){
     ggtitle(ggtitle)
 }
 
-log_model<-function(gene_windows, variable){
+log_model<-function(gene_windows, variable, aic=F){
   form<-formula(paste0("as.numeric(",variable,")~H3K4me1+H3K9me1+H3K4me3+H3K27me3+H3K9me2+H3K27ac+H3K36me3+PII+H3K4ac+H3K12ac+H3K9ac"))
-  model<-summary(glm(form, gene_windows, family="binomial"))
-  model_sum<-data.table(model$coefficients)
-  model_sum$predictor<-gsub("unmarked","",row.names(model$coefficients))
+  model<-glm(form, gene_windows, family="binomial")
+  if(aic==T){
+    model<-stepAIC(model, direction="both")
+  }
+  model_sum<-summary(model)
+  model_sum<-data.table(model_sum$coefficients)
+  model_sum$predictor<-gsub("unmarked","",row.names(summary(model)$coefficients))
   model_sum$Estimate<--model_sum$Estimate
   model_sum$P<-model_sum$`Pr(>|z|)`
   model_sum$predictor<-factor(model_sum$predictor, levels=model_sum$predictor[order(-model_sum$`z value`)])
   model_sum$y<--model_sum$`z value`
   return(model_sum)
 }
+
 log_model_single<-function(gene_windows, variable){
   
   preds<-c("H3K4me1","H3K9me1","H3K4me3","H3K27me3","H3K9me2","H3K27ac","H3K36me3","PII","H3K4ac","H3K12ac","H3K9ac")
@@ -232,7 +238,6 @@ log_model_single<-function(gene_windows, variable){
     model_sum$y<--model_sum$`z value`
     return(model_sum)
   })
-  names(models)<-preds
   models<-rbindlist(models)[predictor!="(Intercept)"]
   models$predictor<-factor(models$predictor, levels=models$predictor[order(-models$`z value`)])
   return(models)

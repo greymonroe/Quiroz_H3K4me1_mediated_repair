@@ -27,14 +27,23 @@ pdf("figures/genome_window_regression.pdf", width=1.7, height=1.5)
   model_sum<-log_model(genome_windows_log, "indel")
   plot_model(model_sum, "InDel, 100bp windows, log")
   
+  model_sum<-log_model(genome_windows_log, "snp", aic=T)
+  plot_model(model_sum, "SBS, 100bp windows, \nlog aic")
+  model_sum<-log_model(genome_windows_log, "snp_noCT", aic=T)
+  plot_model(model_sum, "non-C>T SBS, 100bp windows, \nlog aic")
+  model_sum<-log_model(genome_windows_log, "snp_homoz", aic=T)
+  plot_model(model_sum, "Homozygous SBS, 100bp windows, \nlog aic")
+  model_sum<-log_model(genome_windows_log, "indel", aic=T)
+  plot_model(model_sum, "InDel, 100bp windows, \nlog aic")
+  
   model_sum<-log_model_single(genome_windows_log, "snp")
-  plot_model(model_sum, "SBS, 100bp windows, log single")
+  plot_model(model_sum, "SBS, 100bp windows, \nlog single")
   model_sum<-log_model_single(genome_windows_log, "snp_noCT")
-  plot_model(model_sum, "non-C>T SBS, 100bp windows, log single")
+  plot_model(model_sum, "non-C>T SBS, 100bp windows, \nlog single")
   model_sum<-log_model_single(genome_windows_log, "snp_homoz")
-  plot_model(model_sum, "Homozygous SBS, 100bp windows, log single")
+  plot_model(model_sum, "Homozygous SBS, 100bp windows, \nlog single")
   model_sum<-log_model_single(genome_windows_log, "indel")
-  plot_model(model_sum, "InDel, 100bp windows, log single")
+  plot_model(model_sum, "InDel, 100bp windows, \nlog single")
   
   genome_windows<-make_genome_windows(genome[1:12], 100, overlap=F)
   model_sum<-lm_model(genome_windows, "snp", aic=F)
@@ -53,6 +62,7 @@ gene_windows$snp_homoz<-add_vars_to_gene_windows(gene_windows, snps[Genotype=="H
 gene_windows$indel<-add_vars_to_gene_windows(gene_windows, indels)
 
 pdf("figures/gene_windows_logistic_regression.pdf", width=1.8, height=1.5)
+ ##### all variable pred
   model_sum<-log_model(gene_windows, "snp")
   plot_model(model_sum, "SBS")
   model_sum<-log_model(gene_windows, "snp_homoz")
@@ -65,8 +75,25 @@ pdf("figures/gene_windows_logistic_regression.pdf", width=1.8, height=1.5)
   plot_model(model_sum, "SBS, LoF only")
   model_sum<-log_model(gene_windows, "indel")
   plot_model(model_sum, "indel")
-  model_sum<-log_model(gene_windows, "indel")
-  plot_model(model_sum, "indel, LoF only")
+  ##### aic variable pred
+  model_sum<-log_model(gene_windows, "snp", aic=T)
+  plot_model(model_sum, "SBS, 100bp windows, \nlog aic")
+  model_sum<-log_model(gene_windows, "snp_noCT", aic=T)
+  plot_model(model_sum, "non-C>T SBS, 100bp windows, \nlog aic")
+  model_sum<-log_model(gene_windows, "snp_homoz", aic=T)
+  plot_model(model_sum, "Homozygous SBS, 100bp windows, \nlog aic")
+  model_sum<-log_model(gene_windows[gene %in% LoF$Gene.ID], "snp", aic=T)
+  plot_model(model_sum, "SBS, LoF only, \nlog aic")
+  ##### single variable pred
+  
+  model_sum<-log_model_single(gene_windows, "snp")
+  plot_model(model_sum, "SBS, 100bp windows, \nlog single")
+  model_sum<-log_model_single(gene_windows, "snp_noCT")
+  plot_model(model_sum, "non-C>T SBS, 100bp windows, \nlog single")
+  model_sum<-log_model_single(gene_windows, "snp_homoz")
+  plot_model(model_sum, "Homozygous SBS, 100bp windows, \nlog single")
+  model_sum<-log_model_single(gene_windows[gene %in% LoF$Gene.ID], "snp")
+  plot_model(model_sum, "SBS, LoF only, \nlog single")
 dev.off()
 
 ## around peaks
@@ -146,11 +173,13 @@ pdf("figures/kitaake_SBS.pdf", width=6, height=1.5)
     facet_grid(~mut, scales = "free")+
     theme_classic(base_size = 6)+
     scale_x_discrete(name="Context")+
+    ggtitle("Rice")+
     theme(axis.text.x = element_text(angle=90, vjust=0.5, hjust=1), legend.key.size = unit(x = 0.3, units = "line"))+
     scale_fill_manual(values=c("cyan3","black","red4","gray","green3","pink3"), guide="none")
   ggplot(Athal, aes(x=context_only, y=(N), fill=mut))+
     geom_bar(stat="identity", width=0.5)+
     facet_grid(~mut, scales = "free")+
+    ggtitle("A. thaliana")+
     theme_classic(base_size = 6)+
     theme(axis.text.x = element_text(angle=90, vjust=0.5, hjust=1), legend.key.size = unit(x = 0.3, units = "line"))+
     scale_fill_manual(values=c("cyan3","black","red4","gray","green3","pink3"), guide="none")
@@ -242,12 +271,10 @@ gene_annotations_all$mut<-add_vars_hits_to_gene_windows(gene_annotations_all, ns
 gene_annotations_all$mut_nonCT<-add_vars_hits_to_gene_windows(gene_annotations_all,ns_s[!`Single base substitution` %in% c("C>T","G>A")])
 gene_annotations_all$H3K4me1<-encode_hits(H3K4me1, gene_annotations_all, out="length")
 gene_annotations_all$H3K36me3<-encode_hits(H3K36me3, gene_annotations_all, out="length")
-gene_annotations_all$mut_s<-add_vars_hits_to_gene_windows(gene_annotations_all, ns_s[MutationType=="synonymous"])
 gene_annotations_all$coding<-add_vars_hits_to_gene_windows(gene_annotations_all, ns_s[WithinCDS=="Yes"])
 gene_annotations_all$noncoding<-add_vars_hits_to_gene_windows(gene_annotations_all, ns_s[WithinCDS=="No"])
 
 pdf("figures/rice_mutation_constraints.pdf", width=1.5, height=1.5)
-
 
 # genes with or without H3K4me1
 gene_annotations_all_sums<-gene_annotations_all[is_representative=="Y" & chr %in% paste0("Chr",1:12) & is.finite(pnps),.(mut=sum(mut),  length=sum(length), ns=sum(ns), s=sum(s), ns_s=sum(ns)/sum(s), pct=sum(mut)/sum(length), H3K4me1=sum(H3K4me1),nonH3K4me1=sum(H3K4me1==0),H3K4me1_pct=sum(H3K4me1)/sum(length), N=.N, mut_nonCT=sum(mut_nonCT), pct_nonCT=sum(mut_nonCT)/sum(length), mut_syn=sum(s), pct_mut_syn=sum(s)/sum(CDS),  mut_noncoding=sum(noncoding), pct_mut_noncoding=sum(noncoding)/sum(length-CDS), CDS=sum(CDS), noncoding=sum(length-CDS)), by=.(grp=H3K4me1>0)]
@@ -279,11 +306,11 @@ plot_bars_rice(gene_annotations_all_sums, yvar="pct_nonCT", xlab="Expressed",yla
 #synonly
 chisq.test(gene_annotations_all_sums[,c("mut_syn","CDS"), with=F])
 (gene_annotations_all_sums$pct_mut_syn[2]-gene_annotations_all_sums$pct_mut_syn[1])/gene_annotations_all_sums$pct_mut_syn[2]
-plot_bars_rice(gene_annotations_all_sums, yvar="pct_mut_syn", xlab="Expressed",ylab="Mutations/bp",ggtitle = "p = 1e-7")
+plot_bars_rice(gene_annotations_all_sums, yvar="pct_mut_syn", xlab="Expressed",ylab="Synonymous Mutations/CDS bp",ggtitle = "p = 1e-7")
 #non-coding
 chisq.test(gene_annotations_all_sums[,c("mut_noncoding","noncoding"), with=F])
 (gene_annotations_all_sums$pct_mut_noncoding[2]-gene_annotations_all_sums$pct_mut_noncoding[1])/gene_annotations_all_sums$pct_mut_noncoding[2]
-plot_bars_rice(gene_annotations_all_sums, yvar="pct_mut_noncoding", xlab="PnPs",ylab="Mutations/bp",ggtitle = "p = 1e-12")
+plot_bars_rice(gene_annotations_all_sums, yvar="pct_mut_noncoding", xlab="PnPs",ylab="non-coding Mutations/bp",ggtitle = "p = 1e-12")
 
 #N/S
 chisq.test(gene_annotations_all_sums[,4:5])
@@ -306,7 +333,7 @@ plot_bars_rice(gene_annotations_all_sums, yvar="pct_nonCT", xlab="PnPs",ylab="Mu
 #synonly
 chisq.test(gene_annotations_all_sums[,c("mut_syn","CDS"), with=F])
 (gene_annotations_all_sums$pct_mut_syn[2]-gene_annotations_all_sums$pct_mut_syn[1])/gene_annotations_all_sums$pct_mut_syn[2]
-plot_bars_rice(gene_annotations_all_sums, yvar="pct_mut_syn", xlab="PnPs",ylab="Mutations/bp",ggtitle = "p = 1e-12")
+plot_bars_rice(gene_annotations_all_sums, yvar="pct_mut_syn", xlab="PnPs",ylab="Synonymous Mutations/CDS bp",ggtitle = "p = 1e-12")
 #non-coding
 chisq.test(gene_annotations_all_sums[,c("mut_noncoding","noncoding"), with=F])
 (gene_annotations_all_sums$pct_mut_noncoding[2]-gene_annotations_all_sums$pct_mut_noncoding[1])/gene_annotations_all_sums$pct_mut_noncoding[2]
