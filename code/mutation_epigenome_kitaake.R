@@ -60,8 +60,9 @@ gene_windows$snp<-add_vars_to_gene_windows(gene_windows, snps)
 gene_windows$snp_noCT<-add_vars_to_gene_windows(gene_windows, snps[!Single.base.substitution %in% c("C>T","G>A")])
 gene_windows$snp_homoz<-add_vars_to_gene_windows(gene_windows, snps[Genotype=="Homozygous"])
 gene_windows$indel<-add_vars_to_gene_windows(gene_windows, indels)
+gene_windows$snp_count<-add_vars_hits_to_gene_windows(gene_windows, snps)
 
-pdf("figures/gene_windows_logistic_regression.pdf", width=1.8, height=1.5)
+pdf("figures/gene_windows_regression.pdf", width=1.8, height=1.5)
  ##### all variable pred
   model_sum<-log_model(gene_windows, "snp")
   plot_model(model_sum, "SBS")
@@ -85,7 +86,6 @@ pdf("figures/gene_windows_logistic_regression.pdf", width=1.8, height=1.5)
   model_sum<-log_model(gene_windows[gene %in% LoF$Gene.ID], "snp", aic=T)
   plot_model(model_sum, "SBS, LoF only, \nlog aic")
   ##### single variable pred
-  
   model_sum<-log_model_single(gene_windows, "snp")
   plot_model(model_sum, "SBS, 100bp windows, \nlog single")
   model_sum<-log_model_single(gene_windows, "snp_noCT")
@@ -94,6 +94,15 @@ pdf("figures/gene_windows_logistic_regression.pdf", width=1.8, height=1.5)
   plot_model(model_sum, "Homozygous SBS, 100bp windows, \nlog single")
   model_sum<-log_model_single(gene_windows[gene %in% LoF$Gene.ID], "snp")
   plot_model(model_sum, "SBS, LoF only, \nlog single")
+  ##### Additional models
+  model_sum<-lm_model(gene_windows, "snp_count", aic=T)
+  plot_model(model_sum, "SBS, 100bp windows, \nlm aic")
+  model_sum<-lm_model(gene_windows, "snp_count", aic=F)
+  plot_model(model_sum, "SBS, 100bp windows, \nlm")
+  model_sum<-poisson_model(gene_windows, "snp_count", aic=T)
+  plot_model(model_sum, "SBS, 100bp windows, \npoisson aic")
+  model_sum<-poisson_model(gene_windows, "snp_count", aic=F)
+  plot_model(model_sum, "SBS, 100bp windows, \npoisson")
 dev.off()
 
 ## around peaks

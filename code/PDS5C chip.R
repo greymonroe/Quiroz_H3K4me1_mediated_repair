@@ -263,4 +263,61 @@ pdf("figures/PDS5C_chip_enrich_CDS.pdf", width=.75, height=1.25)
   
 dev.off()
 
+pdf("figures/PDS5C_chip_enrich_mutation.pdf", width=1.5, height=1.5)
+genes$length<-genes$stop-genes$start
+means_cds<-genes[is.finite(PnPs)&mutations>0,.(mutations=sum(mutations, na.rm=T), length=sum(stop-start), se=sd(enrich, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(PnPs, g=10)))]
+cor<-cor.test(genes[is.finite(DnDs)]$DnDs, genes[is.finite(DnDs)]$enrich)
+ggplot(means_cds[!is.na(grp)], aes(x=grp, y=mutations/length))+
+  #geom_line(size=0.25, col="green4")+
+  geom_point(size=0.5)+
+  theme_classic(base_size = 6)+
+  ggtitle(paste("r =", round(cor$estimate, digits = 2)))+
+  scale_y_continuous(name="Mutations/b.p.")+
+  #geom_errorbar(aes(ymin=enrich-se, ymax=enrich+se), width=0)+
+  theme(axis.text.x = element_text(angle=90, hjust=1))+
+  scale_x_continuous(name="Dn/Ds %ile")
+
+means_cds<-genes[is.finite(DnDs)&mutations>0,.(mutations=sum(mutations, na.rm=T), length=sum(stop-start), se=sd(enrich, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(H3K4me1, g=100)))]
+cor<-cor.test(genes[is.finite(DnDs)]$DnDs, genes[is.finite(DnDs)]$enrich)
+ggplot(means_cds[!is.na(grp)], aes(x=grp, y=mutations/length))+
+  #geom_line(size=0.25, col="green4")+
+  geom_point(size=0.5)+
+  theme_classic(base_size = 6)+
+  ggtitle(paste("r =", round(cor$estimate, digits = 2)))+
+  scale_y_continuous(name="mutation rates")+
+  #geom_errorbar(aes(ymin=enrich-se, ymax=enrich+se), width=0)+
+  theme(axis.text.x = element_text(angle=90, hjust=1))+
+  scale_x_continuous(name="H3K4me1")
+
+means_cds<-genes[,.(mutations=sum(mutations, na.rm=T), length=sum(stop-start), se=sd(enrich, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(enrich, g=100)))]
+cor<-cor.test((genes$mutations)/genes$length, genes$enrich)
+spearman<-cor.test((genes$mutations)/genes$length, genes$enrich, method = "spearman")
+
+ggplot(means_cds[!is.na(grp)], aes(x=grp, y=log(mutations/length)))+
+  #geom_line(size=0.25, col="green4")+
+  geom_point(size=0.5)+
+  theme_classic(base_size = 6)+
+  ggtitle(paste("r =", round(cor$estimate, digits = 2)))+
+  scale_y_continuous(name="Mutations/b.p.")+
+  #geom_errorbar(aes(ymin=enrich-se, ymax=enrich+se), width=0)+
+  theme(axis.text.x = element_text(angle=90, hjust=1))+
+  scale_x_continuous(name="PDS5C enrichment")
+
+means_cds<-genes[is.finite(DnDs),.(enrich=mean(enrich, na.rm=T), length=sum(`CDS length`), se=sd(enrich, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(DnDs, g=100)))]
+cor<-cor.test(genes[is.finite(DnDs)]$DnDs, genes[is.finite(DnDs)]$enrich)
+spear<-cor.test(genes[is.finite(DnDs)]$DnDs, genes[is.finite(DnDs)]$enrich, method="spearman")
+
+ggplot(means_cds[!is.na(grp)], aes(x=grp, y=enrich))+
+  #geom_line(size=0.25, col="green4")+
+  geom_point(size=0.5)+
+  theme_classic(base_size = 6)+
+  ggtitle(paste("r =", round(cor$estimate, digits = 2)))+
+  scale_y_continuous(name="PDS5C enrichment")+
+  geom_errorbar(aes(ymin=enrich-se, ymax=enrich+se), width=0)+
+  theme(axis.text.x = element_text(angle=90, hjust=1))+
+  scale_x_continuous(name="Dn/Ds %ile")
+
+dev.off()
+
+
 

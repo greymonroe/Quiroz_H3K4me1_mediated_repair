@@ -211,7 +211,7 @@ log_model<-function(gene_windows, variable, aic=F){
   form<-formula(paste0("as.numeric(",variable,")~H3K4me1+H3K9me1+H3K4me3+H3K27me3+H3K9me2+H3K27ac+H3K36me3+PII+H3K4ac+H3K12ac+H3K9ac"))
   model<-glm(form, gene_windows, family="binomial")
   if(aic==T){
-    model<-stepAIC(model, direction="both")
+    model<-stepAIC(model, direction="both", trace = F)
   }
   model_sum<-summary(model)
   model_sum<-data.table(model_sum$coefficients)
@@ -252,7 +252,20 @@ lm_model<-function(gene_windows, variable, aic=F){
   model_sum$Estimate<-model_sum$Estimate
   model_sum$P<-model_sum$`Pr(>|t|)`
   model_sum$predictor<-factor(model_sum$predictor, levels=model_sum$predictor[order(model_sum$`t value`)])
-  model_sum$y<-model_sum$`t value`
+  model_sum$y<--model_sum$`t value`
+  return(model_sum)
+}
+
+poisson_model<-function(gene_windows, variable, aic=F){
+  form<-formula(paste0("as.numeric(",variable,")~H3K4me1+H3K4me3+H3K9me1+H3K27me3+H3K9me2+H3K27ac+H3K36me3+PII+H3K4ac+H3K12ac+H3K9ac"))
+  model<-glm(form, gene_windows, family="poisson")
+  if(aic==T){model<-MASS::stepAIC(model, direction="both", trace = F)}
+  model_sum<-data.table(summary(model)$coefficients)
+  model_sum$predictor<-gsub("unmarked","",row.names(summary(model)$coefficients))
+  model_sum$Estimate<-model_sum$Estimate
+  model_sum$P<-model_sum$`Pr(>|z|)`
+  model_sum$predictor<-factor(model_sum$predictor, levels=model_sum$predictor[order(model_sum$`z value`)])
+  model_sum$y<--model_sum$`z value`
   return(model_sum)
 }
 
