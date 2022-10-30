@@ -8,10 +8,11 @@ source("code/libraries_functions.R")
 gff<-fread("data/A_thaliana_gff.txt")
 genes<-gff[type=="gene"]
 genes$START<-genes$start
-genes$CHROM<-genes$chr
+genes$CHROM<-as.character(genes$chr)
 genes$STOP<-genes$stop
-mutations<-fread("~/Desktop/germline_mutations_meta.csv")
+mutations<-fread("data/A_thaliana_germline_mutations.txt")[!is.na(POS)]
 mutations$CHROM<-as.character(mutations$CHROM)
+mutations$POSITION<-mutations$POS
 genes$mutations<-mutations_in_features(genes, mutations)
 
 CDS<-fread("data/A_thaliana_genes.txt")
@@ -47,6 +48,8 @@ genes$chip2<-rowSums(as.data.table(chips2), na.rm=F)
 genes$input2<-rowSums(as.data.table(inputs)[,c(2)], na.rm=F)
 genes$enrich2<-log2((1+genes$chip2)/sum(genes$chip2, na.rm=T)) - log2((1+genes$input2)/sum(genes$input2, na.rm=T))
 genes$enrich<-rowMeans(genes[,c("enrich1","enrich2"), with=F], na.rm=T)
+
+fwrite(genes, "data/A_thal_genes_PDS5_enrich.csv")
 
 pdf("figures/PDS5C_chip_enrich_constraint.pdf", width=1.5, height=1.5)
 means_cds<-genes[is.finite(NI),.(enrich=mean(enrich, na.rm=T), length=sum(`CDS length`), se=sd(enrich2, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(NI, g=20)))]
