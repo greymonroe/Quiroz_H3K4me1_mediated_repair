@@ -252,7 +252,7 @@ lm_model<-function(gene_windows, variable, aic=F){
   model_sum$Estimate<-model_sum$Estimate
   model_sum$P<-model_sum$`Pr(>|t|)`
   model_sum$predictor<-factor(model_sum$predictor, levels=model_sum$predictor[order(model_sum$`t value`)])
-  model_sum$y<--model_sum$`t value`
+  model_sum$y<-model_sum$`t value`
   return(model_sum)
 }
 
@@ -265,8 +265,13 @@ poisson_model<-function(gene_windows, variable, aic=F){
   model_sum$Estimate<-model_sum$Estimate
   model_sum$P<-model_sum$`Pr(>|z|)`
   model_sum$predictor<-factor(model_sum$predictor, levels=model_sum$predictor[order(model_sum$`z value`)])
-  model_sum$y<--model_sum$`z value`
+  model_sum$y<-model_sum$`z value`
   return(model_sum)
+}
+
+chip_total<-function(bedfile){
+  in1<-fread(bedfile)
+  total<-sum(in1$V4*(in1$V3-in1$V2))
 }
 
 chip_overlaps<-function(bedfile, featureobject){

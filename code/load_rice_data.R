@@ -85,6 +85,21 @@ H3K4ac<-read_encode("data/SRR3213599_H3K4ac_seedlings.bed")
 H3K12ac<-read_encode("data/SRR6510886_H4K12ac_seedlings.bed")
 H3K9ac<-read_encode("data/SRR6795643_H3K9ac_seedlings.bed")
 
+allmods<-rbindlist(list(H3K4me1,
+H3K9me1,
+H3K36me3,
+H3K4me3,
+H3K9me2,
+H3K27ac,
+PII,
+H3K27me3,
+H3K4ac,
+H3K12ac,
+H3K9ac))
+
+allmodssum<-allmods[,.(N=.N, length=mean(length)), by=V9]
+
+
 missense<-fread("data/rice_missense.txt");colnames(missense)<-c("CHROM","POS")
 missense$chr<-paste0('Chr',missense$CHROM)
 missense$start<-missense$POS
@@ -113,4 +128,7 @@ ns<-ns_s[MutationType=="non-synonymous"]
 s<-ns_s[MutationType=="synonymous"]
 
 setkey(ns_s, chr, start, stop)
+setkey(s, chr, start, stop)
+setkey(ns, chr, start, stop)
+
 

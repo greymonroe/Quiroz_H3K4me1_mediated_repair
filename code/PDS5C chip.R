@@ -40,13 +40,18 @@ chips2<-lapply(chipfiles[c(2,4)], function(i){
   chip_overlaps(i, genes)
 })
 
+in1_total<-chip_total(infiles[1])
+in2_total<-chip_total(infiles[1])
+chip1_total<-chip_total(chipfiles[1])+chip_total(chipfiles[3])
+chip2_total<-chip_total(chipfiles[2])+chip_total(chipfiles[4])
+
 genes$chip1<-rowSums(as.data.table(chips1), na.rm=F)
 genes$input1<-rowSums(as.data.table(inputs)[,c(1)], na.rm=F)
-genes$enrich1<-log2((1+genes$chip1)/sum(genes$chip1, na.rm=T)) - log2((1+genes$input1)/sum(genes$input1, na.rm=T))
+genes$enrich1<-log2((1+genes$chip1)/chip1_total) - log2((1+genes$input1)/in1_total)
 
 genes$chip2<-rowSums(as.data.table(chips2), na.rm=F)
 genes$input2<-rowSums(as.data.table(inputs)[,c(2)], na.rm=F)
-genes$enrich2<-log2((1+genes$chip2)/sum(genes$chip2, na.rm=T)) - log2((1+genes$input2)/sum(genes$input2, na.rm=T))
+genes$enrich2<-log2((1+genes$chip2)/chip2_total) - log2((1+genes$input2)/in2_total)
 genes$enrich<-rowMeans(genes[,c("enrich1","enrich2"), with=F], na.rm=T)
 
 fwrite(genes, "data/A_thal_genes_PDS5_enrich.csv")
@@ -55,7 +60,7 @@ pdf("figures/PDS5C_chip_enrich_constraint.pdf", width=1.5, height=1.5)
 means_cds<-genes[is.finite(NI),.(enrich=mean(enrich, na.rm=T), length=sum(`CDS length`), se=sd(enrich2, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(NI, g=20)))]
 cor<-cor.test(genes[is.finite(NI)]$NI, genes[is.finite(NI)]$enrich)
 ggplot(means_cds[!is.na(grp)], aes(x=grp*5, y=enrich))+
-  geom_line(size=0.25, col="green4")+
+  geom_line(linewidth=0.25, col="green4")+
   geom_point(size=0.5)+
   theme_classic(base_size = 6)+
   ggtitle(paste("r =", round(cor$estimate, digits = 2)))+
@@ -64,10 +69,10 @@ ggplot(means_cds[!is.na(grp)], aes(x=grp*5, y=enrich))+
   theme(axis.text.x = element_text(angle=90, hjust=1))+
   scale_x_continuous(name="NI %ile")
 
-means_cds<-genes[,.(mutations=sum(mutations, na.rm=T), length=sum(stop-start), se=sd(enrich, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(enrich, g=100)))]
-cor<-cor.test((genes$mutations)/genes$length, genes$enrich)
+means_cds<-genes[,.(mutations=sum(mutations, na.rm=T), length=sum(stop-start), se=sd(enrich, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(enrich, g=20)))]
+cor<-cor.test((genes$mutations)/(genes$stop-genes$start), genes$enrich)
 ggplot(means_cds[!is.na(grp)], aes(x=grp, y=mutations/length))+
-  #geom_line(size=0.25, col="green4")+
+  geom_line(size=0.25, col="green4")+
   geom_point(size=0.5)+
   theme_classic(base_size = 6)+
   ggtitle(paste("r =", round(cor$estimate, digits = 2)))+
@@ -88,7 +93,7 @@ ggplot(means_cds[!is.na(grp)], aes(x=grp*5, y=enrich))+
   theme(axis.text.x = element_text(angle=90, hjust=1))+
   scale_x_continuous(name="Tajimas D %ile")
 
-means_cds<-genes[is.finite(tissue_breadth),.(enrich=mean(enrich, na.rm=T), length=sum(`CDS length`), se=sd(enrich2, na.rm=T)/sqrt(.N)), by=.(grp=(Hmisc::cut2(tissue_breadth, g=10)))]
+means_cds<-genes[is.finite(tissue_breadth),.(enrich=mean(enrich, na.rm=T), length=sum(`CDS length`), se=sd(enrich, na.rm=T)/sqrt(.N)), by=.(grp=(Hmisc::cut2(tissue_breadth, g=10)))]
 cor<-cor.test(genes[is.finite(tissue_breadth)]$tissue_breadth, genes[is.finite(tissue_breadth)]$enrich)
 ggplot(means_cds[!is.na(grp)], aes(x=grp, y=enrich))+
   geom_line(size=0.25, col="green4", group=1)+

@@ -105,6 +105,16 @@ pdf("figures/gene_windows_regression.pdf", width=1.8, height=1.5)
   plot_model(model_sum, "SBS, 100bp windows, \npoisson")
 dev.off()
 
+pdf("figures/gene_windows_regression_all_SBS.pdf", width=1.8, height=1.5)
+
+model_sum<-lm_model(gene_windows, "snp_count", aic=T)
+plot_model(model_sum, "SBS, 100bp windows, \nlm aic")
+model_sum<-lm_model(gene_windows, "snp_count", aic=F)
+plot_model(model_sum, "SBS, 100bp windows, \nlm")
+model_sum<-poisson_model(gene_windows, "snp_count", aic=T)
+plot_model(model_sum, "SBS, 100bp windows, \npoisson aic")
+model_sum<-poisson_model(gene_windows, "snp_count", aic=F)
+plot_model(model_sum, "SBS, 100bp windows, \npoisson")
 ## around peaks
 
 pdf("figures/peaks_mutations.pdf", width=1.7, height=1.5)
@@ -147,30 +157,30 @@ pdf("figures/peaks_mutations.pdf", width=1.7, height=1.5)
 dev.off()
 
 pdf("figures/peaks_mutations_extra.pdf", width=1.7, height=1.5)
-  plot_peaks(H3K4me1_leaves, "H3K4me1 leaves, SBS","Peak region", 30, ns_s)
-  plot_peaks(H3K4me1_panicles, "H3K4me1 panicles, SBS","Peak region", 30, ns_s)
-  plot_peaks(gene_annotations_basic, "H3K4me1 leaves","Gene body", 30,H3K4me1_leaves, gene=T, marky=T)
-  plot_peaks(gene_annotations_basic, "H3K4me1 panicles","Gene body", 30,H3K4me1_panicles, gene=T, marky=T)
-  plot_peaks(H3K4me1, "H3K4me1, InDel","Peak region", 30, indels)
-  plot_peaks(H3K9me2, "H3K9me2, InDel","Peak region", 30,indels)
-  plot_peaks(gene_annotations_basic, "Genes, InDel","Gene body", 30,indels)
-  plot_peaks(H3K9ac, "H3K9ac, InDel","Peak region", 30,indels)
-  plot_peaks(H3K4me1, "H3K4me1, Homozygous SBS","Peak region", 30, ns_s[Genotype=="Homozygous"])
-  plot_peaks(H3K4me1, "H3K4me1, non-C>T SBS","Peak region", 30, ns_s[!Single.base.substitution %in% c("C>T","G>A")])
+
   plot_peaks(H3K4ac, "H3K4ac, SBS","Peak region", 30, ns_s)
   plot_peaks(H3K9me2, "H3K9me2, SBS","Peak region", 30,ns_s)
+  plot_peaks(H3K36me3, "H3K36me3, SBS","Peak region", 30,ns_s)
+  plot_peaks(H3K4me3, "H3K4me3, SBS","Peak region", 30,ns_s)
+  plot_peaks(H3K9me1, "H3K9me1, SBS","Peak region", 30,ns_s)
+  plot_peaks(H3K12ac, "H3K12ac, SBS","Peak region", 30,ns_s)
   plot_peaks(PII, "PII, SBS","Peak region", 30,ns_s)
-  plot_peaks(H3K9me2, "H3K9me2, non-C>T SBS","Peak region", 30,ns_s[!Single.base.substitution %in% c("C>T","G>A")])
+  plot_peaks(H3K27me3, "H3K27me3, SBS","Peak region", 30,ns_s)
+  plot_peaks(H3K4me1, "H3K4me1, SBS","Peak region", 30,ns_s)
+  plot_peaks(H3K27ac, "H3K27ac, SBS","Peak region", 30,ns_s)
+  plot_peaks(H3K9ac, "H3K9ac, SBS","Peak region", 30,ns_s)
+  
   plot_peaks(gene_annotations_basic, "PII","Gene body", 30,PII, gene=T, marky=T)
   plot_peaks(gene_annotations_basic, "H3K9me2","Gene body", 30,H3K9me2, gene=T, marky=T)
   plot_peaks(gene_annotations_basic, "H3K4me3","Gene body", 30,H3K4me3, gene=T, marky=T)
   plot_peaks(gene_annotations_basic, "H3K9ac","Gene body", 30,H3K9ac, gene=T, marky=T)
   plot_peaks(gene_annotations_basic, "H3K36me3","Gene body", 30,H3K36me3, gene=T, marky=T)
-  plot_peaks(gene_annotations_basic, "PII","Gene body", 30,PII, gene=T, marky=T)
   plot_peaks(gene_annotations_basic, "H3K12ac","Gene body", 30,H3K12ac, gene=T, marky=T)
   plot_peaks(gene_annotations_basic, "H3K27me3","Gene body", 30,H3K27me3, gene=T, marky=T)
   plot_peaks(gene_annotations_basic, "H3K9me1","Gene body", 30,H3K9me1, gene=T, marky=T)
   plot_peaks(gene_annotations_basic, "H3K27ac","Gene body", 30,H3K27ac, gene=T, marky=T)
+  plot_peaks(gene_annotations_basic, "H3K4me1","Gene body", 30,H3K4me1, gene=T, marky=T)
+  
 dev.off()
 
 
@@ -220,7 +230,7 @@ dev.off()
 
 # NS/S -------------------------------------------------------
           
-      mut_table<-data.table(table(ref=snps$REF, alt=snps$ALT))[N>0]
+      mut_table<-data.table(table(ref=s$Old, alt=s$New))[N>0]
       write.table(mut_table, "data/mut_table.txt")
       null<-Null_ns_s(mutations = "data/mut_table.txt", composition = "data/Base_pair_frequency_of_CDS.csv")
       
@@ -243,19 +253,6 @@ dev.off()
       gene_annotations_all$pnps<-gene_annotations_all$missense/gene_annotations_all$syn
       gene_annotations_all_means<-gene_annotations_all[,.(syn=sum(syn), missense=sum(missense), ns_s=sum(missense)/sum(syn)), by=.(is_TE)]
       
-      #Ns reduction required to explain observed reduction in gene body mutation
-      # hist(gene_annotations_all$pct_CDS)
-      # CDSpct<-sum(gene_annotations_basic$CDS)/sum(gene_annotations_basic$length)
-      # 
-      # genic_reduction<-out_genebody[[2]][,.(sum(mut)/sum(length)), by=.(body=region=="gene body")]
-      # (genic_reduction$V1[1]-genic_reduction$V1[2])/genic_reduction$V1[1]
-      # 
-      # table(ns_s[`StopCodon?`!="Stop_codon"]$MutationType, gsub("\\..+", "", ns_s[`StopCodon?`!="Stop_codon"]$gene) %in% LoF$Gene.ID)
-      # table(ns_s$MutationType)
-      # chisq.test(c(5370,2155), p = null[[1]])
-      # chisq.test(c(5370-5370*0.3, 2155), p = prop.table(c(null[[1]], 1)))
-      # 
-
       chisq.test(matrix(c(Ns_TE, S_TE, Ns_gene, S_gene), nrow=2))
       chisq.test(c(Ns_gene, S_gene), p = prop.table(c(null[[1]], 1)))
       chisq.test(matrix(c(Ns, S, nrow(missense), nrow(synonymous)), nrow=2))
@@ -273,9 +270,44 @@ dev.off()
         theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1), legend.key.size = unit(0.4, units="line"))
       dev.off()
       
-   
-    
-# rice contraints
+      table(ns_s$gene=="")
+      gene_annotations_all$CHROM<-gene_annotations_all$chr
+      gene_annotations_all$START<-gene_annotations_all$start
+      gene_annotations_all$STOP<-gene_annotations_all$stop
+      ns_s$CHROM<-ns_s$chr
+      ns_s$POSITION<-ns_s$POS
+      ns_s$genic<-features_overlap_mutation(gene_annotations_all[is_TE=="N" & is_representative=="Y"], ns_s)
+      ns_s$TE<-features_overlap_mutation(gene_annotations_all[is_TE=="Y" & is_representative=="Y"], ns_s)
+      ns_s$loc<-ifelse(ns_s$genic, "genic","intergenic")
+      ns_s$loc[ns_s$TE]<-"TE"
+     
+      gene_annotations_all[is_representative=="Y",.(sum(length)), by=is_TE]
+      table(ns_s$genic)
+      
+      pdf("figures/mutation_gene_intergene_TE.pdf", width=1.5, height=1.5)
+      sum<-data.table(table(loc=ns_s$loc))
+      sum$length<-c(110152630, 374471240-110152630-54427496, 54427496)
+      sum$pct<-sum$N/sum$length
+      chisq.test(sum[,2:3])
+      ggplot(sum, aes(x=loc, y=pct))+
+        geom_bar(stat="identity", col="black", fill="dodgerblue4")+
+        scale_x_discrete(name="Location")+
+        scale_y_continuous(name="Mutations/bp")+
+        theme_classic(base_size = 6)
+      sum<-data.table(table(loc=ns_s[!`Single base substitution` %in% c("C>T","G>A")]$loc))
+      sum$length<-c(110152630, 374471240-110152630-54427496, 54427496)
+      sum$pct<-sum$N/sum$length
+      chisq.test(sum[,2:3])
+      ggplot(sum, aes(x=loc, y=pct))+
+        geom_bar(stat="identity", col="black", fill="dodgerblue4")+
+        scale_x_discrete(name="Location")+
+        scale_y_continuous(name="Mutations (non C>T)/bp")+
+        theme_classic(base_size = 6)
+      dev.off()
+      
+      
+      
+# rice constraints
 gene_annotations_all$mut<-add_vars_hits_to_gene_windows(gene_annotations_all, ns_s)
 gene_annotations_all$mut_nonCT<-add_vars_hits_to_gene_windows(gene_annotations_all,ns_s[!`Single base substitution` %in% c("C>T","G>A")])
 gene_annotations_all$H3K4me1<-encode_hits(H3K4me1, gene_annotations_all, out="length")
