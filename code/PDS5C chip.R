@@ -41,7 +41,7 @@ chips2<-lapply(chipfiles[c(2,4)], function(i){
 })
 
 in1_total<-chip_total(infiles[1])
-in2_total<-chip_total(infiles[1])
+in2_total<-chip_total(infiles[2])
 chip1_total<-chip_total(chipfiles[1])+chip_total(chipfiles[3])
 chip2_total<-chip_total(chipfiles[2])+chip_total(chipfiles[4])
 
@@ -56,6 +56,7 @@ genes$enrich<-rowMeans(genes[,c("enrich1","enrich2"), with=F], na.rm=T)
 
 fwrite(genes, "data/A_thal_genes_PDS5_enrich.csv")
 
+genes<-fread("data/A_thal_genes_PDS5_enrich.csv")
 pdf("figures/PDS5C_chip_enrich_constraint.pdf", width=1.5, height=1.5)
 means_cds<-genes[is.finite(NI),.(enrich=mean(enrich, na.rm=T), length=sum(`CDS length`), se=sd(enrich2, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(NI, g=20)))]
 cor<-cor.test(genes[is.finite(NI)]$NI, genes[is.finite(NI)]$enrich)
@@ -120,7 +121,7 @@ ggplot(means_cds[!is.na(grp)], aes(x=grp, y=enrich))+
 means_cds<-genes[is.finite(PnPs),.(enrich=mean(enrich, na.rm=T), length=sum(`CDS length`), se=sd(enrich, na.rm=T)/sqrt(.N)), by=.(grp=as.numeric(Hmisc::cut2(PnPs, g=100)))]
 cor<-cor.test(genes[is.finite(PnPs)]$PnPs, genes[is.finite(PnPs)]$enrich)
 ggplot(means_cds[!is.na(grp)], aes(x=grp*5, y=enrich))+
-  geom_line(size=0.25, col="green4")+
+  #geom_line(size=0.25, col="green4")+
   geom_point(size=0.5)+
   theme_classic(base_size = 6)+
   ggtitle(paste("r =", round(cor$estimate, digits = 2)))+
@@ -167,7 +168,6 @@ ggplot(means_cds[!is.na(grp)], aes(x=grp, y=enrich))+
 
 dev.off()
 
-summary(lm(enrich~H3K4me2+H3K4me1+H3K4me3+H3K27me1+H3K27ac+H3K36ac+H3K36me3+H3K9me1+H3K56ac+H3K9me2+H3K4me3, genes))
 
 pdf("figures/PDS5C_chip_enrich_ESN.pdf", width=1.5, height=1.5)
   ESN<-fread("data/A_thaliana_essential_genes.txt")

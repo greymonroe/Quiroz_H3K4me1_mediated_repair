@@ -61,11 +61,14 @@ gene_windows$snp_noCT<-add_vars_to_gene_windows(gene_windows, snps[!Single.base.
 gene_windows$snp_homoz<-add_vars_to_gene_windows(gene_windows, snps[Genotype=="Homozygous"])
 gene_windows$indel<-add_vars_to_gene_windows(gene_windows, indels)
 gene_windows$snp_count<-add_vars_hits_to_gene_windows(gene_windows, snps)
+gene_windows$snp_homopolymer_free<-add_vars_to_gene_windows(gene_windows, snps[homopolymer_neighbor!=T])
 
 pdf("figures/gene_windows_regression.pdf", width=1.8, height=1.5)
  ##### all variable pred
   model_sum<-log_model(gene_windows, "snp")
   plot_model(model_sum, "SBS")
+  model_sum<-log_model(gene_windows, "snp_homopolymer_free")
+  plot_model(model_sum, "SBS homopolymers removed")
   model_sum<-log_model(gene_windows, "snp_homoz")
   plot_model(model_sum, "Homozygous SBS")
   model_sum<-log_model(gene_windows, "snp_noCT")

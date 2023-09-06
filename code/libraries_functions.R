@@ -293,6 +293,26 @@ chip_overlaps<-function(bedfile, featureobject){
   return(out)
 }
 
+chip_overlaps_window<-function(bedfile, featureobject){
+  cat("\nreading ");cat(bedfile)
+  in1<-fread(bedfile)
+  featureobject$ID<-1:nrow(featureobject)
+  colnames(in1)<-c("chr","start","stop","depth")
+  in1$length<-as.numeric(in1$stop-in1$start)
+  in1$depth<-as.numeric(in1$depth)
+  setkey(in1, chr, start, stop)
+  out<-unlist(lapply(1:5, function(c) {
+    cat(" chr ");cat(c)
+    CDS_input_overlap<-foverlaps(featureobject[chr==c], in1[chr==c],type="any")
+    CDS_input<-CDS_input_overlap[,.(len=sum(length,na.rm=T), dep=sum(depth,na.rm=T)), by=.(chr, start=i.start, stop=i.stop, ID)]
+    CDS_input$input<-CDS_input$len*CDS_input$dep
+    rm("CDS_input_overlap")
+    input<-CDS_input$input
+    return(input)
+  }))
+  return(out)
+}
+
 peaks_randomized<-function(featureobject){
   rand<-rbindlist(apply(rbindlist(list(featureobject,featureobject,featureobject,featureobject,featureobject,featureobject,featureobject,featureobject,featureobject,featureobject)), 1, function(x){
     chr<-x["chr"]
@@ -338,4 +358,109 @@ bw_overlaps<-function(bw_object, window_object){
   }))
   return(out)
 }
+
+convert_to_format <- function(num) {
+  # Convert the number to scientific notation
+  sci_num <- format(num, scientific = TRUE, digits = 1)
+  
+  # Separate the coefficient and exponent parts
+  parts <- strsplit(sci_num, split = "e")[[1]]
+  
+  # Format the string as needed using bquote
+  formatted_num <- bquote("p=" ~ .(as.numeric(parts[1])) %*% 10^.(as.numeric(parts[2])))
+  formatted_num <- bquote(italic(p) == .(as.numeric(parts[1])) %*% 10^.(as.numeric(parts[2])))
+  
+  return(formatted_num)
+}
+
+line_data<-function(mutations){
+  enrichment_line<-mutations[,
+                             .(H3K4me1_mean=median(enrich_H3K4me1), 
+                               H3K4me1=sum(enrich_H3K4me1>1)/sum(enrich_H3K4me1<1), 
+                               H3K4me1_1=sum(enrich1_H3K4me1>0)/.N, 
+                               H3K4me1_2=sum(enrich2_H3K4me1>0)/.N,
+                               essential=sum(essential)/sum(!essential),
+                               genic=sum(genic)/sum(!genic), 
+                               ox=sum(mut %in% c("C>A","T>G"))/sum(!mut %in% c("C>A","T>G")),
+                               N=.N), 
+                             by=.(file, trt)]
+  return(enrichment_line)
+}
+
+
+line_barplot<-function(enrichment_line, response, yaxis){
+  
+  tmp<-enrichment_line[,c("trt",response), with=F]
+  colnames(tmp)[2]<-"response"
+  tmp<-tmp[is.finite(response)]
+  tmp$trt<-factor(tmp$trt, levels=c("WT","MSH6"))
+  
+  
+  test<-t.test(tmp$response~tmp$trt)
+  p<-test$p.value
+  means<-tmp[,.(mean=mean(response), se=sd(response)/sqrt(.N)),by=.(trt)]
+  plot<-ggplot(means, aes(x=trt, y=mean,  fill=trt))+
+    theme_classic(base_size = 6)+
+    geom_bar(stat="identity", col="black", width=0.75)+
+    geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0)+
+    scale_fill_manual(values = c("dodgerblue","orange2"), guide="none")+
+    scale_y_continuous(name=yaxis)+
+    scale_x_discrete(name="Genotype", labels=c("WT","msh6"))+
+    theme(plot.title = element_text(hjust = 0.5, size=6))+
+    ggtitle(convert_to_format(p))
+  
+  plot
+}
+
+line_boxplot<-function(enrichment_line, response, yaxis){
+  
+  tmp<-enrichment_line[,c("trt",response), with=F]
+  colnames(tmp)[2]<-"response"
+  tmp$trt<-factor(tmp$trt, levels=c("WT","MSH6"))
+  
+  
+  test<-t.test(tmp$response~tmp$trt)
+  p<-test$p.value
+  plot<-ggplot(tmp, aes(x=trt, y=response, col=trt))+
+    theme_classic(base_size = 6)+
+    geom_boxplot(fill=NA, outlier.size = 0.5)+
+    scale_color_manual(values = c("dodgerblue","orange2"), guide="none")+
+    scale_y_continuous(name=yaxis)+
+    scale_x_discrete(name="Genotype", labels=c("WT","msh6"))+
+    theme(plot.title = element_text(hjust = 0.5, size=6))+
+    ggtitle(convert_to_format(p))
+  plot
+}
+
+
+
+make_gene_windows2<-function(data, window=150){
+  deciles<-3000/window
+  windows<-rbindlist(apply(data, 1, function(x) {
+    
+    chr=x["chr"]
+    body_starts=seq(as.numeric(x["start"]), as.numeric(x["stop"]), by=3000/deciles);body_starts<-body_starts[-length(body_starts)]
+    body_stops<-seq(as.numeric(x["start"]), as.numeric(x["stop"]),  by=3000/deciles)[-1]
+    upstream_starts<-seq(as.numeric(x["start"])-3000, as.numeric(x["start"]), length.out=deciles+1)[-(deciles+1)]
+    upstream_stops<-seq(as.numeric(x["start"])-3000, as.numeric(x["start"]), length.out=deciles+1)[-1]
+    downstream_starts<-seq(as.numeric(x["stop"]), as.numeric(x["stop"])+3000, length.out=deciles+1)[-(deciles+1)]
+    downstream_stops<-seq(as.numeric(x["stop"]), as.numeric(x["stop"])+3000, length.out=deciles+1)[-1]
+    
+    out<-data.table(chr=x["chr"], 
+                    start=c(upstream_starts, body_starts, downstream_starts),
+                    stop=c(upstream_stops, body_stops, downstream_stops),
+                    region=c(rep("upstream", length(upstream_starts)),rep("gene body", length(body_starts)),rep("downstream", length(downstream_starts))),
+                    ID=x["ID"], 
+                    gene=x["locus"])
+    out$pos<-1:nrow(out)
+    out$length<-out$stop-out$start
+    return(out)
+    
+  }))
+  windows$window_ID<-1:nrow(windows)
+  setkey(windows, chr, start, stop)
+  gene_windows<-windows
+  return(gene_windows)
+}
+
 

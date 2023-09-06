@@ -66,13 +66,16 @@ ggplot(somatic ,aes(x=depth_pct, fill=genotype))+
 dev.off()
 
 pdf("figures/MSH6_MAF_all.pdf", width=3.5, height=2)
-ggplot(PASS3 ,aes(x=depth_pct, fill=type))+
-  geom_histogram()+
+ggplot(mutations ,aes(x=depth_pct, fill=trt, alpha=type))+
+  geom_histogram(bins=80)+
+  scale_alpha_manual(values = c(0.75, 0.5,  1), guide="none")+
   facet_wrap(~trt)+
+  scale_fill_manual(values=c("dodgerblue","orange"), guide="none")+
   theme_classic(base_size = 6)+
   scale_x_continuous(name="Alt frequency")+
   scale_y_continuous(name="Mutations")
 dev.off()
+
 
 fisher.test(table(somatic$genic, somatic$trt))
 fisher.test(table(germline$genic, germline$trt))
@@ -88,7 +91,7 @@ ggplot(summary, aes(x=trt, y=(genic_pct), fill=trt))+geom_bar(stat="identity", c
 dev.off()
 
 pdf("Figures/MSH6_loc_somatic.pdf", width=1.5, height=2)
-summary<-dcast(somatic[,.(.N), by=.(trt, loc)], loc~trt)
+summary<-dcast(mutations[,.(.N), by=.(trt, loc)], loc~trt)
 summary$MSH6_pct<-summary$MSH6/summary$WT
 chisq.test(summary[,2:3])
 ggplot(summary, aes(x=loc, y=(MSH6_pct), fill=loc))+
@@ -200,9 +203,11 @@ setkey(chr, CHROM, start, stop)
 
 
 pdf("Figures/MSH6_KO_H3K4me1.pdf", width=1.5, height=2)
-chr$MSH6<-mutations_in_features(chr, somatic[ trt=="MSH6"])
-chr$WT<-mutations_in_features(chr, somatic[ trt=="WT"])
-summary<-chr[,.(MSH6=sum(MSH6), WT=sum(WT), ratio=sum(MSH6)/sum(WT), H3K4me1_mean=mean(`H3K4me1_mean`), length=.N*200), by=.(H3K4me1=as.numeric(Hmisc::cut2(`H3K4me1_mean`, g = 3)))]
+chr$MSH6<-mutations_in_features(chr, mutations[ trt=="MSH6"])
+chr$WT<-mutations_in_features(chr, mutations[ trt=="WT"])
+summary<-chr[,.(MSH6=sum(MSH6), WT=sum(WT), ratio=sum(MSH6)/sum(WT), H3K4me1_mean=mean(`H3K4me1_mean`), length=sum(stop-start)), by=.(H3K4me1=as.numeric(Hmisc::cut2(`H3K4me1_mean`, g = 3)))]
+summary$MSH6_pct<-summary$MSH6/summary$length
+summary$WT_pct<-summary$WT/summary$length
 ggplot(summary, aes(x=H3K4me1, y=ratio, fill=as.character(H3K4me1)))+
   geom_bar(stat="identity", position="dodge", col="black")+
   scale_fill_manual(values=c("gray90","gray35","gray20"), guide="none")+
@@ -211,6 +216,16 @@ ggplot(summary, aes(x=H3K4me1, y=ratio, fill=as.character(H3K4me1)))+
   scale_x_continuous(name="H3K4me1 ChIP-seq", breaks=1:3, labels=c("33 %ile","66 %ile","100%ile"))+
   theme(axis.title.y = element_text(angle=90, hjust=0.5, vjust=0.5))
 chisq.test(summary[,2:3])
+
+ggplot(summary, aes(x=H3K4me1, y=WT_pct, fill=as.character(H3K4me1)))+
+  geom_bar(stat="identity", position="dodge", col="black")+
+  scale_fill_manual(values=c("gray90","gray35","gray20"), guide="none")+
+  scale_y_continuous(name="")+
+  theme_classic(base_size = 6)+
+  scale_x_continuous(name="H3K4me1 ChIP-seq", breaks=1:3, labels=c("33 %ile","66 %ile","100%ile"))+
+  theme(axis.title.y = element_text(angle=90, hjust=0.5, vjust=0.5))
+chisq.test(summary[,2:3])
+
 dev.off()
 
 

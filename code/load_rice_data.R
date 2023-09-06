@@ -2,6 +2,8 @@
 setwd("~/Dropbox/Research/rice mutation paper/")
 
 genome<-read.fasta("data/Osativa_204_softmasked.fa.gz")
+load("data/homopolymer_rice.Rda")
+
 gff<-fread("data/all.clean.gff", fill=T)
 gff$name=substr(gff$V9, 4,17)
 gff$model=gsub("(ID=)|:.+|;.+","", gff$V9)
@@ -48,6 +50,9 @@ snps$context<-contexts(snps, genome)
 context_table<-data.table(table(context=snps$context))
 context_table$context_only<-substr(context_table$context, 1, 3)
 context_table$mut<-paste(substr(context_table$context, 2,2),substr(context_table$context, 6,6), sep=">")
+snps$context10<-long_context(snps, 10)
+snps$homopolymer_neighbor<-homopolymer_var_annotate(snps, homopolymer_rice, 3, 1)
+
 setkey(snps, chr, start, stop)
 
 Athal<-fread("data/A_thal_germ_SBS.txt")
