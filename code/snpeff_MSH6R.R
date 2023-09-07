@@ -19,10 +19,12 @@ snpeff$effect<-"non-coding region"
 snpeff$effect[which(snpeff$synonymous)]<-"synonymous"
 snpeff$effect[which(snpeff$nonsynonymous)]<-"nonsynonymous"
 
-snpeff_cleaned<-snpeff[FILTER=="PASS", .(effect=unique(effect)), by=unique2]
+snpeff_cleaned<-snpeff[FILTER=="PASS", .(effect=unique(effect), nonsynonymous=unique(nonsynonymous), synonymous=unique(synonymous)), by=unique2]
 
+sum(snpeff_cleaned$nonsynonymous)
 PASS3$unique2<-paste(PASS3$CHROM, PASS3$POS, PASS3$ALT, sep = "_")
 PASS3_effect<-merge(PASS3, snpeff_cleaned)
+fwrite(PASS3_effect, "data/Strelka2_mutations_SNPeff.csv")
 
 
 MSH6_genotypes<-fread("data/MSH6_genotypes.csv")
