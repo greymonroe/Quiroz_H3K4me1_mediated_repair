@@ -42,7 +42,7 @@ CDS_non_CDS$PDS5C<-(CDS_non_CDS_PDS51$enrich+CDS_non_CDS_PDS51.2$enrich+CDS_non_
 
 CDS_non_CDS$PDS5_input<-CDS_non_CDS_PDS51$input+CDS_non_CDS_PDS51.2$input+CDS_non_CDS_PDS52$input+CDS_non_CDS_PDS52.2$input
 
-fwrite(CDS_non_CDS, "data/CDS_non_CDS_PDS5_H3K4me1.csv")
+#fwrite(CDS_non_CDS, "data/CDS_non_CDS_PDS5_H3K4me1.csv")
 CDS_non_CDS<-fread("data/CDS_non_CDS_PDS5_H3K4me1.csv")
 
 CDS_non_CDS_ranks<-CDS_non_CDS[PDS5_input>0 & H3K4me1_input>0,.(CDS=sum(TYPE=="gene"), non_CDS=sum(TYPE=="non_CDS"), N=.N), by=.(H3K4me1=as.numeric(cut(rank(H3K4me1), 100)), PDS5C=as.numeric(cut(rank(PDS5C), 100)))]
@@ -77,31 +77,6 @@ pdf("figures/PDS5_H3K4me1_gene_intergene.pdf", width=1.75, height=1.75)
 p1
 dev.off()
 
-
-p2 <- ggplot(CDS_non_CDS, aes(x=rank(H3K4me1), y=rank(PDS5C))) +
-  geom_density2d_filled(aes(fill = after_stat(level))) +
-  facet_grid(~TYPE) +
-  theme_minimal(base_size = 6) +
-  coord_fixed() +
-  labs(
-    x = "H3K4me1 enrichment",
-    y = "PDS5C enrichment",
-    fill = "Density"
-  ) +
-  theme(
-    plot.background = element_blank(),
-    panel.background = element_blank(),
-    legend.background = element_blank(),
-    legend.key = element_blank(),
-    legend.text = element_text(size = 4),          # Adjust text size
-    legend.title = element_text(size = 5),         # Adjust title size
-    legend.key.size = unit(0.25, "cm"),
-    legend.position="none",# Adjust key size
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank()
-  )
-
-
 genes<-fread("data/A_thal_genes_PDS5_enrich.csv")
 
 genes_ranks<-genes[,.(essential=sum(lethal=="Lethal"), non_essential=sum(lethal=="Non-lethal"), N=.N), by=.(H3K4me1=as.numeric(cut(rank(enrich_H3K4me1), 10)), PDS5C=as.numeric(cut(rank(enrich), 10)))]
@@ -112,9 +87,9 @@ p3 <- ggplot(genes_ranks, aes(x=(H3K4me1)*10, y=(PDS5C)*10, color=log(pct_essent
   #geom_tile() +
   geom_point(shape=16) +
   scale_color_gradient(high="dodgerblue", low="orange")+
-  scale_size(range=c(0,2), guide="none")+
+  scale_size(range=c(0,3), guide="none")+
   scale_alpha(range = c(0,1),guide="none")+
-  theme_minimal(base_size = 6) +
+  theme_minimal(base_size = 8) +
   coord_fixed() +
   labs(
     x = "H3K4me1 enrichment (%ile)",
@@ -138,28 +113,6 @@ pdf("figures/PDS5_H3K4me1_essential.pdf", width=1.75, height=1.75)
 p3
 dev.off()
 
-p <- ggplot(genes, aes(x=rank(enrich_H3K4me1), y=rank(enrich))) +
-  geom_density2d_filled(aes(fill = after_stat(level))) +
-  facet_grid(~lethal, labeller = as_labeller(c(`Lethal` = "Essential", `Non-lethal` = "Non-Essential"))) +
-  theme_minimal(base_size = 6) +
-  coord_fixed() +
-  labs(
-    x = "H3K4me1 enrichment",
-    y = "PDS5C enrichment",
-    fill = "Density"
-  ) +
-  theme(
-    plot.background = element_blank(),
-    panel.background = element_blank(),
-    legend.background = element_blank(),
-    legend.key = element_blank(),
-    legend.text = element_text(size = 4),          # Adjust text size
-    legend.title = element_text(size = 5),         # Adjust title size
-    legend.key.size = unit(0.25, "cm"),
-    legend.position="none",# Adjust key size
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank()
-  )
 
 # Save the plot to a PDF
 pdf("figures/PDS5_H3K4me1_relation.pdf", width=3.5, height=2)

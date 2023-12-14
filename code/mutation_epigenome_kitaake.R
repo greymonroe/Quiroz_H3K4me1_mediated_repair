@@ -240,6 +240,7 @@ dev.off()
       stop=sum(ns_s$`StopCodon?`=="Stop_codon")
       Ns=sum(ns_s$MutationType=="non-synonymous")-stop
       S=sum(ns_s$MutationType=="synonymous")
+      Ns/S
       
       ns_s_genes<-ns_s[ns_s$gene %in% gene_annotations_basic$locus & `StopCodon?`!="Stop_codon"]
       Ns_gene=sum(ns_s_genes$MutationType=="non-synonymous")

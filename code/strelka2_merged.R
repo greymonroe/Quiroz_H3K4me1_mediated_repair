@@ -50,6 +50,7 @@ if(file.exists(paste0("data/strelka_merged/strelka_out/",norm,"/results/variants
 }
 }))
 
+fwrite(results,"data/strel2_merged_results.csv")
 PASS<-results[FILTER=="PASS"]
 PASS_counts<-data.table(table(PASS$unique))
 PASS$count<-PASS_counts$N[match(PASS$unique,PASS_counts$V1 )]
@@ -87,6 +88,7 @@ PASS$TE<-features_overlap_mutation(TE, PASS)
 PASS$IG<-!PASS$genic & !PASS$TE
 PASS$loc<-ifelse(PASS$genic, "genic","intergenic")
 PASS$loc[PASS$TE]<-"TE"
+View(PASS[confirmed==F])
 
 ggplot(PASS ,aes(x=depth_pct, fill=chi<0.05))+
   geom_histogram()+
